@@ -1,0 +1,40 @@
+<section class="catalogo-page">
+  <header class="catalogo-header">
+    <div>
+      <p class="eyebrow">Disponível agora</p>
+      <h1>Estações de trabalho</h1>
+    </div>
+    <button class="filter-button" type="button">Filtrar</button>
+  </header>
+
+  <div class="estacoes-grid">
+    @for (estacao of estacoes; track estacao.id) {
+      <article class="estacao-card">
+        <div class="foto-container">
+          <img [src]="estacao.imagem" [alt]="estacao.imagemAlt" class="foto-estacao" loading="eager" decoding="async" />
+          <span class="badge">{{ estacao.nome }}</span>
+        </div>
+        <div class="card-body">
+          <div class="card-topline">
+            <span class="categoria">{{ estacao.categoria }}</span>
+            <span class="rating">★ {{ estacao.avaliacao }}</span>
+          </div>
+          <h2>{{ estacao.nome }}</h2>
+          <p>{{ estacao.descricao }}</p>
+          <ul class="recursos-list">
+            @for (recurso of estacao.recursos; track recurso) {
+              <li>{{ recurso }}</li>
+            }
+          </ul>
+          <div class="card-footer">
+            <div>
+              <span class="price-label">por hora</span>
+              <strong>R$ {{ estacao.preco }}</strong>
+            </div>
+            <button class="btn-reservar" type="button" [routerLink]="['/agendamento']" [queryParams]="{ estacaoId: estacao.id }">Reservar estação</button>
+          </div>
+        </div>
+      </article>
+    }
+  </div>
+</section>

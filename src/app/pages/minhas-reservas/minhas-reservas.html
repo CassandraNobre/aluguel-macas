@@ -1,0 +1,42 @@
+<section class="reservas-page">
+  <header class="reservas-header">
+    <div>
+      <p class="eyebrow">Minha conta</p>
+      <h1>Minhas reservas</h1>
+    </div>
+    <a class="secondary-button" routerLink="/catalogo">Nova reserva</a>
+  </header>
+
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>Estação</th>
+          <th>Data</th>
+          <th>Período</th>
+          <th>Valor</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (reserva of reservas; track reserva.id) {
+          <tr>
+            <td>{{ reserva.estacao }}</td>
+            <td>{{ reserva.data }}</td>
+            <td>{{ reserva.periodo }}</td>
+            <td>{{ reserva.valor }}</td>
+            <td><span class="status {{ reserva.classeStatus }}">{{ reserva.status }}</span></td>
+            <td>
+              @if (podeCancelar(reserva)) {
+                <button type="button" class="cancel-button" (click)="cancelar(reserva)">Cancelar</button>
+              } @else {
+                <span class="no-action">Sem ações</span>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

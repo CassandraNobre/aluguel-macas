@@ -1,0 +1,246 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(rgba(18, 18, 18, 0.88), rgba(18, 18, 18, 0.88)),
+            url('/fundo-login.jpg') no-repeat center center / cover;
+  padding: 2rem;
+}
+
+.login-card {
+  width: min(100%, 420px);
+  background: rgba(20, 20, 20, 0.82);
+  border: 1px solid rgba(187, 134, 252, 0.35);
+  border-radius: 24px;
+  padding: 2rem;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+}
+
+.brand-block {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1.5rem;
+}
+
+.brand-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #bb86fc, #7c4dff);
+  color: #121212;
+  font-weight: 800;
+  font-size: 1.2rem;
+}
+
+.brand-name {
+  margin: 0;
+  color: #f5f5f5;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.login-header {
+  margin-bottom: 1.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.35rem;
+  color: #bb86fc;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.login-header h1 {
+  margin: 0;
+  color: #f5f5f5;
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  line-height: 1.2;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  color: #e5e5e5;
+  font-size: 0.95rem;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  background: rgba(31, 31, 31, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  color: #f5f5f5;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.input-group input:hover {
+  transform: translateY(-1px);
+}
+
+.input-group input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.input-group input:focus {
+  border-color: #bb86fc;
+  box-shadow: 0 0 0 3px rgba(187, 134, 252, 0.18);
+}
+
+.form-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.85rem;
+}
+
+.remember-me {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #d8d8d8;
+}
+
+.remember-me input {
+  accent-color: #bb86fc;
+}
+
+.recover-link {
+  color: #bb86fc;
+  text-decoration: none;
+}
+
+.login-error {
+  margin: -0.35rem 0 0;
+  color: #ff9b9b;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.login-button {
+  border: none;
+  border-radius: 12px;
+  padding: 0.95rem 1rem;
+  background: linear-gradient(135deg, #bb86fc, #8a63ff);
+  color: #121212;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  box-shadow: 0 10px 22px rgba(138, 99, 255, 0.35);
+}
+
+.login-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 28px rgba(138, 99, 255, 0.5);
+  filter: brightness(1.05);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 1.25rem 0 1rem;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.8rem;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.google-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: #f5f5f5;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.google-button:hover,
+.google-button:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.google-icon {
+  display: grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  background: #fff;
+  color: #4285f4;
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.mode-switch {
+  margin: 1.25rem 0 0;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  font-size: 0.88rem;
+}
+
+.mode-switch button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #bb86fc;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mode-switch button:hover,
+.mode-switch button:focus-visible {
+  color: #d9b8ff;
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 1.5rem 1.1rem;
+  }
+
+  .form-options {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

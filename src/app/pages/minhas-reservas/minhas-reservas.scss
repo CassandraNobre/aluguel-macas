@@ -1,0 +1,153 @@
+:host {
+  display: block;
+}
+
+.reservas-page {
+  min-height: calc(100vh - 72px);
+  background: #121212;
+  padding: 2rem;
+}
+
+.reservas-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #bb86fc;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.reservas-header h1 {
+  margin: 0;
+  color: #f5f5f5;
+  font-size: clamp(1.9rem, 3vw, 2.8rem);
+}
+
+.secondary-button {
+  background: rgba(187, 134, 252, 0.1);
+  border: 1px solid rgba(187, 134, 252, 0.35);
+  color: #f5f5f5;
+  border-radius: 12px;
+  padding: 0.8rem 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.table-card {
+  background: rgba(28, 28, 28, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.2);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 1rem 1.1rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+th {
+  background: rgba(187, 134, 252, 0.08);
+  color: #d9b8ff;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+td {
+  color: #f3f3f3;
+  font-size: 0.97rem;
+}
+
+tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 110px;
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.status.confirmed {
+  background: rgba(72, 187, 120, 0.15);
+  color: #7fe0a3;
+}
+
+.status.completed {
+  background: rgba(59, 130, 246, 0.15);
+  color: #8ab8ff;
+}
+
+.status.pending {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f9c56a;
+}
+
+.status.canceled {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f18f8f;
+}
+
+.cancel-button {
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 8px;
+  padding: 0.45rem 0.7rem;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ff9b9b;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.cancel-button:hover,
+.cancel-button:focus-visible {
+  border-color: rgba(239, 68, 68, 0.65);
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.no-action {
+  color: rgba(255, 255, 255, 0.38);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 700px) {
+  .reservas-page {
+    padding: 1.1rem;
+  }
+
+  .reservas-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .table-card {
+    overflow-x: auto;
+  }
+
+  table {
+    min-width: 760px;
+  }
+}
