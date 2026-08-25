@@ -22,11 +22,11 @@
       <tbody>
         @for (reserva of reservas; track reserva.id) {
           <tr>
-            <td>{{ reserva.estacao }}</td>
+            <td>{{ nomeEstacao(reserva) }}</td>
             <td>{{ reserva.data }}</td>
-            <td>{{ reserva.periodo }}</td>
-            <td>{{ reserva.valor }}</td>
-            <td><span class="status {{ reserva.classeStatus }}">{{ reserva.status }}</span></td>
+            <td>{{ reserva.horario_inicio }} - {{ reserva.horario_fim }}</td>
+            <td>{{ valor(reserva) }}</td>
+            <td><span class="status {{ classeStatus(reserva.status) }}">{{ reserva.status }}</span></td>
             <td>
               @if (podeCancelar(reserva)) {
                 <button type="button" class="cancel-button" (click)="cancelar(reserva)">Cancelar</button>
@@ -39,4 +39,8 @@
       </tbody>
     </table>
   </div>
+
+  @if (erro) {
+    <p class="reservas-error" role="alert">{{ erro }}</p>
+  }
 </section>

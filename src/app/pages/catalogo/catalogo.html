@@ -7,29 +7,36 @@
     <button class="filter-button" type="button">Filtrar</button>
   </header>
 
+  @if (carregando) {
+    <p class="catalogo-message">Carregando estações...</p>
+  } @else if (erro) {
+    <p class="catalogo-message error-message">{{ erro }}</p>
+  } @else if (!estacoes.length) {
+    <p class="catalogo-message">Nenhuma estação disponível no momento.</p>
+  } @else {
   <div class="estacoes-grid">
     @for (estacao of estacoes; track estacao.id) {
       <article class="estacao-card">
         <div class="foto-container">
-          <img [src]="estacao.imagem" [alt]="estacao.imagemAlt" class="foto-estacao" loading="eager" decoding="async" />
+          <img [src]="imagem(estacao)" [alt]="estacao.nome" class="foto-estacao" loading="eager" decoding="async" />
           <span class="badge">{{ estacao.nome }}</span>
         </div>
         <div class="card-body">
           <div class="card-topline">
-            <span class="categoria">{{ estacao.categoria }}</span>
-            <span class="rating">★ {{ estacao.avaliacao }}</span>
+            <span class="categoria">{{ estacao.categoria ?? 'Estação' }}</span>
+            <span class="rating">★ {{ estacao.avaliacao ?? '5.0' }}</span>
           </div>
           <h2>{{ estacao.nome }}</h2>
           <p>{{ estacao.descricao }}</p>
           <ul class="recursos-list">
-            @for (recurso of estacao.recursos; track recurso) {
+            @for (recurso of recursos(estacao); track recurso) {
               <li>{{ recurso }}</li>
             }
           </ul>
           <div class="card-footer">
             <div>
               <span class="price-label">por hora</span>
-              <strong>R$ {{ estacao.preco }}</strong>
+              <strong>R$ {{ estacao.preco_por_hora ?? 0 }}</strong>
             </div>
             <button class="btn-reservar" type="button" [routerLink]="['/agendamento']" [queryParams]="{ estacaoId: estacao.id }">Reservar estação</button>
           </div>
@@ -37,4 +44,5 @@
       </article>
     }
   </div>
+  }
 </section>

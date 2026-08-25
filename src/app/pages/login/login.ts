@@ -32,18 +32,17 @@ export class Login {
       return;
     }
 
-    if (!this.authService.entrar(this.email, this.senha, this.lembrar)) {
-      this.erro = 'E-mail ou senha inválidos. Use os dados de acesso do estúdio.';
-      return;
-    }
-
-    this.irParaDestino();
+    this.authService.entrar(this.email, this.senha).subscribe({
+      next: () => this.irParaDestino(),
+      error: (error) => {
+        this.erro = error.error?.message ?? 'E-mail ou senha inválidos.';
+      },
+    });
   }
 
   entrarComGoogle(): void {
     this.erro = '';
-    this.authService.entrarComGoogle(this.lembrar);
-    this.irParaDestino();
+    this.erro = 'O login com Google será habilitado pelo backend.';
   }
 
   alternarModo(): void {
@@ -66,13 +65,17 @@ export class Login {
       return;
     }
 
-    if (!this.authService.cadastrar(this.nome, this.email, this.senha)) {
-      this.erro = 'Este e-mail já possui cadastro. Entre com sua senha.';
-      return;
-    }
-
-    this.authService.entrar(this.email, this.senha, this.lembrar);
-    this.irParaDestino();
+    this.authService.cadastrar(this.nome, this.email, this.senha, this.confirmarSenha).subscribe({
+      next: () => {
+        this.authService.entrar(this.email, this.senha).subscribe({
+          next: () => this.irParaDestino(),
+          error: () => this.erro = 'Cadastro realizado, mas não foi possível iniciar a sessão.',
+        });
+      },
+      error: (error) => {
+        this.erro = error.error?.message ?? 'Erro ao realizar cadastro.';
+      },
+    });
   }
 
   private irParaDestino(): void {

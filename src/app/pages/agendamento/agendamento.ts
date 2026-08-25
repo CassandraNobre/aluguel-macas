@@ -1,13 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Estacao, EstacaoService } from '../../services/estacao.service';
 import { ReservasService } from '../../services/reservas.service';
-
-interface Estacao {
-  id: number;
-  nome: string;
-  preco: number;
-}
 
 @Component({
   selector: 'app-agendamento',
@@ -16,14 +11,7 @@ interface Estacao {
   styleUrl: './agendamento.scss',
 })
 export class Agendamento implements OnInit {
-  readonly estacoes: Estacao[] = [
-    { id: 1, nome: 'Estação #01', preco: 35 },
-    { id: 2, nome: 'Estação #02', preco: 42 },
-    { id: 3, nome: 'Estação #03', preco: 48 },
-    { id: 4, nome: 'Estação #04', preco: 39 },
-  ];
-
-  selectedEstacao: Estacao = this.estacoes[0];
+  selectedEstacao: Estacao | null = null;
   readonly dataMinima = this.formatarDataInput(new Date());
   dataSessao = this.dataMinima;
   horarioInicio = '09:00';
@@ -36,16 +24,20 @@ export class Agendamento implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
+    private estacaoService: EstacaoService,
     private reservasService: ReservasService,
   ) {}
 
   ngOnInit(): void {
     const estacaoId = Number(this.route.snapshot.queryParamMap.get('estacaoId') ?? '1');
-    this.selectedEstacao = this.estacoes.find((item) => item.id === estacaoId) ?? this.estacoes[0];
+    this.estacaoService.buscarEstacao(estacaoId).subscribe({
+      next: (response) => this.selectedEstacao = response.data,
+      error: () => this.erro = 'Não foi possível carregar a estação selecionada.',
+    });
   }
 
   get valorTotal(): number {
-    return this.selectedEstacao.preco * this.horasReservadas;
+    return (this.selectedEstacao?.preco_por_hora ?? 0) * this.horasReservadas;
   }
 
   get horasReservadas(): number {
@@ -95,19 +87,19 @@ export class Agendamento implements OnInit {
     }
 
     const reservaCriada = this.reservasService.adicionarReserva(
-      this.selectedEstacao.nome,
-      this.formatarDataExibicao(this.dataSessao),
-      this.periodoFormatado,
-      this.valorTotal,
+      this.selectedEstacao?.id ?? 0,
+      this.dataSessao,
+      this.horarioInicio,
+      this.horarioFim,
       this.observacoes,
-    );
-
-    if (!reservaCriada) {
-      this.erro = 'Já existe uma reserva ativa para esta estação nesse período. Escolha outro horário.';
-      return;
-    }
-
-    this.router.navigate(['/minhas-reservas']);
+    ).subscribe({
+      next: () => this.router.navigate(['/minhas-reservas']),
+      error: (error) => {
+        this.erro = error.status === 409
+          ? 'Este horário já está reservado. Escolha outro período.'
+          : error.error?.message ?? 'Não foi possível criar a reserva.';
+      },
+    });
   }
 
   private converterHora(hora: string): number | null {
@@ -122,8 +114,4 @@ export class Agendamento implements OnInit {
     return `${ano}-${mes}-${dia}`;
   }
 
-  private formatarDataExibicao(data: string): string {
-    const [ano, mes, dia] = data.split('-');
-    return `${dia}/${mes}/${ano}`;
-  }
 }

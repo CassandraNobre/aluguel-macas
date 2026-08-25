@@ -1,101 +1,81 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 
-export interface UsuarioSessao {
-  email: string;
+export interface Usuario {
+  id?: number;
   nome: string;
+  nome_artistico?: string;
+  email: string;
 }
 
-interface Conta {
-  email: string;
-  nome: string;
-  senha: string;
+interface ApiResponse<T> {
+  success: boolean;
+  status: number;
+  message: string;
+  data: T;
+}
+
+interface LoginData {
+  token: string;
+  user: Usuario;
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
-  private static readonly STORAGE_KEY = 'inkstation-sessao';
-  private static readonly CONTAS_KEY = 'inkstation-contas';
+  private readonly apiUrl = 'http://localhost:3000/api';
+  private readonly tokenKey = 'inkstation-token';
+  private readonly usuarioKey = 'inkstation-usuario';
+  private readonly usuarioSubject = new BehaviorSubject<Usuario | null>(this.usuarioSalvo());
+  readonly usuario$ = this.usuarioSubject.asObservable();
 
-  get usuario(): UsuarioSessao | null {
-    try {
-      const dados = localStorage.getItem(AuthService.STORAGE_KEY)
-        ?? sessionStorage.getItem(AuthService.STORAGE_KEY);
-      return dados ? (JSON.parse(dados) as UsuarioSessao) : null;
-    } catch {
-      return null;
-    }
+  constructor(private http: HttpClient) {}
+
+  get token(): string | null {
+    return localStorage.getItem(this.tokenKey);
+  }
+
+  get usuario(): Usuario | null {
+    return this.usuarioSubject.value;
   }
 
   get estaAutenticado(): boolean {
-    return this.usuario !== null;
+    return Boolean(this.token && this.usuario);
   }
 
-  entrar(email: string, senha: string, lembrar: boolean): boolean {
-    const emailNormalizado = email.trim().toLowerCase();
-    const conta = this.contas.find((item) => item.email === emailNormalizado && item.senha === senha);
-
-    if (!conta) {
-      return false;
-    }
-
-    const sessao: UsuarioSessao = {
-      email: emailNormalizado,
-      nome: conta.nome,
-    };
-
-    this.sair();
-
-    if (lembrar) {
-      localStorage.setItem(AuthService.STORAGE_KEY, JSON.stringify(sessao));
-    } else {
-      sessionStorage.setItem(AuthService.STORAGE_KEY, JSON.stringify(sessao));
-    }
-
-    return true;
+  entrar(email: string, senha: string): Observable<ApiResponse<LoginData>> {
+    return this.http.post<ApiResponse<LoginData>>(`${this.apiUrl}/auth/login`, { email, senha }).pipe(
+      tap((response) => {
+        localStorage.setItem(this.tokenKey, response.data.token);
+        localStorage.setItem(this.usuarioKey, JSON.stringify(response.data.user));
+        this.usuarioSubject.next(response.data.user);
+      }),
+    );
   }
 
-  cadastrar(nome: string, email: string, senha: string): boolean {
-    const emailNormalizado = email.trim().toLowerCase();
-
-    if (this.contas.some((conta) => conta.email === emailNormalizado)) {
-      return false;
-    }
-
-    const contas = [...this.contas, { email: emailNormalizado, nome: nome.trim(), senha }];
-    localStorage.setItem(AuthService.CONTAS_KEY, JSON.stringify(contas));
-    return true;
-  }
-
-  entrarComGoogle(lembrar: boolean): void {
-    const sessao: UsuarioSessao = {
-      email: 'artista.google@inkstation.com',
-      nome: 'Artista Google',
-    };
-
-    this.sair();
-    const armazenamento = lembrar ? localStorage : sessionStorage;
-    armazenamento.setItem(AuthService.STORAGE_KEY, JSON.stringify(sessao));
-  }
-
-  private get contas(): Conta[] {
-    try {
-      const dados = localStorage.getItem(AuthService.CONTAS_KEY);
-
-      if (!dados) {
-        return [{ email: 'tatuador@inkstation.com', nome: 'Tatuador InkStation', senha: '123456' }];
-      }
-
-      const contas = JSON.parse(dados) as Conta[];
-      return Array.isArray(contas) ? contas : [];
-    } catch {
-      return [];
-    }
+  cadastrar(nome_artistico: string, email: string, senha: string, confirmar_senha: string): Observable<ApiResponse<unknown>> {
+    return this.http.post<ApiResponse<unknown>>(`${this.apiUrl}/auth/register`, {
+      nome_artistico,
+      email,
+      senha,
+      confirmar_senha,
+    });
   }
 
   sair(): void {
-    localStorage.removeItem(AuthService.STORAGE_KEY);
-    sessionStorage.removeItem(AuthService.STORAGE_KEY);
+    localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(this.usuarioKey);
+    this.usuarioSubject.next(null);
+  }
+
+  private usuarioSalvo(): Usuario | null {
+    try {
+      const usuario = localStorage.getItem(this.usuarioKey);
+      return usuario ? JSON.parse(usuario) as Usuario : null;
+    } catch {
+      return null;
+    }
   }
 }
