@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Estacao, EstacaoService } from '../../services/estacao.service';
 
@@ -13,23 +13,17 @@ export class Catalogo implements OnInit {
   carregando = true;
   erro = '';
 
-  constructor(
-    private estacaoService: EstacaoService,
-    private cdr: ChangeDetectorRef,
-  ) {}
+  constructor(private estacaoService: EstacaoService) {}
 
   ngOnInit(): void {
     this.estacaoService.listarEstacoes().subscribe({
       next: (response) => {
         this.estacoes = response.data ?? [];
         this.carregando = false;
-        // Atualiza a view quando a resposta assíncrona termina fora do ciclo atual.
-        this.cdr.markForCheck();
       },
       error: () => {
         this.erro = 'Não foi possível carregar as estações.';
         this.carregando = false;
-        this.cdr.markForCheck();
       },
     });
   }
