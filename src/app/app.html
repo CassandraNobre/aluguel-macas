@@ -18,4 +18,8 @@
   <main class="page-content">
     <router-outlet></router-outlet>
   </main>
+
+  @if (authService.estaAutenticado) {
+    <app-chatbot />
+  }
 </div>

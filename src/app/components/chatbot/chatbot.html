@@ -1,0 +1,47 @@
+@if (aberto) {
+  <section class="chat-panel" aria-label="Chat de atendimento">
+    <header class="chat-header">
+      <div>
+        <span class="chat-status">Atendimento InkStation</span>
+        <h2>Assistente do estúdio</h2>
+      </div>
+      <button type="button" class="close-button" aria-label="Fechar chat" (click)="alternar()">×</button>
+    </header>
+
+    <div class="messages" aria-live="polite">
+      @for (item of mensagens; track $index) {
+        <p class="message" [class.user-message]="item.autor === 'usuario'">{{ item.texto }}</p>
+      }
+      @if (carregando) {
+        <p class="message typing-message">Consultando o assistente...</p>
+      }
+    </div>
+
+    @if (erro) {
+      <p class="chat-error" role="alert">{{ erro }}</p>
+    }
+
+    <form class="chat-form" (ngSubmit)="enviar()">
+      <input
+        type="text"
+        name="mensagem"
+        [(ngModel)]="mensagem"
+        placeholder="Digite sua dúvida..."
+        autocomplete="off"
+        [disabled]="carregando"
+        aria-label="Mensagem para o assistente"
+      />
+      <button type="submit" aria-label="Enviar mensagem" [disabled]="carregando || !mensagem.trim()">Enviar</button>
+    </form>
+  </section>
+}
+
+<button
+  type="button"
+  class="chat-trigger"
+  [class.active]="aberto"
+  aria-label="Abrir assistente InkStation"
+  (click)="alternar()"
+>
+  {{ aberto ? '×' : '💬' }}
+</button>
