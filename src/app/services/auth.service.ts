@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { API_URL } from './api.config';
 
 export interface Usuario {
   id?: number;
@@ -25,7 +26,7 @@ interface LoginData {
   providedIn: 'root',
 })
 export class AuthService {
-  private readonly apiUrl = 'http://localhost:3000/api';
+  private readonly apiUrl = API_URL;
   private readonly tokenKey = 'inkstation-token';
   private readonly usuarioKey = 'inkstation-usuario';
   private readonly usuarioSubject = new BehaviorSubject<Usuario | null>(this.usuarioSalvo());

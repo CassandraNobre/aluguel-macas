@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { API_URL } from './api.config';
 
 export interface ChatbotResponse {
   success?: boolean;
@@ -13,7 +14,7 @@ export interface ChatbotResponse {
 
 @Injectable({ providedIn: 'root' })
 export class ChatbotService {
-  private readonly apiUrl = 'http://localhost:3000/api';
+  private readonly apiUrl = API_URL;
 
   constructor(private http: HttpClient) {}
 

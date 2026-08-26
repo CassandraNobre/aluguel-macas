@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { API_URL } from './api.config';
 
 export interface Reserva {
   id: number;
@@ -22,7 +23,7 @@ export interface Reserva {
   providedIn: 'root',
 })
 export class ReservasService {
-  private readonly apiUrl = 'http://localhost:3000/api';
+  private readonly apiUrl = API_URL;
   private readonly reservasSubject = new BehaviorSubject<Reserva[]>([]);
   readonly reservas$ = this.reservasSubject.asObservable();
 

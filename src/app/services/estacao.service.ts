@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { API_URL } from './api.config';
 
 export interface Estacao {
   id: number;
@@ -17,7 +18,7 @@ export interface Estacao {
 
 @Injectable({ providedIn: 'root' })
 export class EstacaoService {
-  private readonly apiUrl = 'http://localhost:3000/api';
+  private readonly apiUrl = API_URL;
 
   constructor(private http: HttpClient) {}
 
