@@ -10,6 +10,36 @@ aluguel-macas/
 ├── backend/        # API a ser adicionada
 └── README.md
 ```
+O backend Node.js está em `backend/` e expõe a API REST em `/api`. Em produção,
+a URL pública é `https://inkstation-backend.onrender.com/api`.
+
+### Backend local
+
+```bash
+cd backend
+npm install
+npm start
+```
+
+A API local fica disponível em `http://localhost:3000`. O health check é
+`http://localhost:3000/health`.
+
+Endpoints principais:
+
+- `POST /api/auth/login`
+- `POST /api/auth/register`
+- `GET /api/estacoes`
+- `GET /api/estacoes/:id`
+- `GET /api/reservas`
+- `POST /api/reservas`
+- `PATCH /api/reservas/:id/cancelar`
+- `POST /api/chatbot`
+
+As rotas protegidas usam `Authorization: Bearer TOKEN`. Copie `backend/.env.example`
+para `backend/.env` e preencha as variáveis localmente. Nunca versione o arquivo
+`.env` com senhas, tokens ou chaves de provedores de IA.
+
+This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.21.
 
 ## Development server
 

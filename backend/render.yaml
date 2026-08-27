@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: inkstation-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "13995"
+      - key: DB_USER
+        sync: false
+      - key: DB_PASS
+        sync: false
+      - key: DB_NAME
+        value: inkstation
+      - key: DB_SSL
+        value: "true"
+      - key: FRONTEND_URL
+        value: https://aluguel-macas.vercel.app

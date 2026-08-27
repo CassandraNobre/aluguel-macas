@@ -1,0 +1,76 @@
+<IfModule mod_rewrite.c>
+    # Enable the rewrite engine
+    RewriteEngine On
+
+    # Set the base path
+    RewriteBase /inkstation/public/
+
+    # Exclude existing files from rewriting
+    RewriteCond %{REQUEST_FILENAME} !-f
+
+    # Exclude existing directories from rewriting
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # Rewrite all requests to index.php
+    RewriteRule ^ index.php [QSA,L]
+
+    # Allow access to specific files
+    RewriteCond %{REQUEST_URI} !^(favicon\.ico|robots\.txt)
+</IfModule>
+
+# Security headers
+<IfModule mod_headers.c>
+    # Prevent click-jacking attacks
+    Header always append X-Frame-Options "SAMEORIGIN"
+
+    # Prevent MIME type sniffing
+    Header always append X-Content-Type-Options "nosniff"
+
+    # Enable XSS protection
+    Header always append X-XSS-Protection "1; mode=block"
+
+    # Content Security Policy (adjust as needed)
+    Header always append Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;"
+
+    # Enable HSTS
+    Header always append Strict-Transport-Security "max-age=31536000; includeSubDomains"
+</IfModule>
+
+# Disable directory listing
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>
+
+# Compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/javascript
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/x-javascript
+    AddOutputFilterByType DEFLATE application/json
+</IfModule>
+
+# Browser cache
+<IfModule mod_expires.c>
+    ExpiresActive On
+
+    # Images
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+
+    # CSS and JavaScript
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType text/javascript "access plus 1 month"
+
+    # Default
+    ExpiresDefault "access plus 2 days"
+</IfModule>

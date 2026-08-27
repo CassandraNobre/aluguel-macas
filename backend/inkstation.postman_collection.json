@@ -1,0 +1,283 @@
+{
+  "info": {
+    "name": "InkStation API",
+    "description": "API REST para Sistema de Reserva de Estações de Trabalho em Estúdio de Tatuagem",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Autenticação",
+      "item": [
+        {
+          "name": "Registrar Usuário",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json();",
+                  "  pm.environment.set('usuario_id', data.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\\n  \\\"nome_artistico\\\": \\\"Artista {{$timestamp}}\\\",\\n  \\\"email\\\": \\\"artista{{$timestamp}}@example.com\\\",\\n  \\\"senha\\\": \\\"senha123456\\\",\\n  \\\"confirmar_senha\\\": \\\"senha123456\\\"\\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  if (data.data && data.data.token) {",
+                  "    pm.environment.set('token', data.data.token);",
+                  "    pm.environment.set('usuario_id', data.data.user.id);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\\n  \\\"email\\\": \\\"artista@example.com\\\",\\n  \\\"senha\\\": \\\"senha123456\\\"\\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Obter Usuário Atual",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Estações",
+      "item": [
+        {
+          "name": "Listar Todas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/estacoes",
+              "host": ["{{base_url}}"],
+              "path": ["estacoes"]
+            }
+          }
+        },
+        {
+          "name": "Obter Detalhes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/estacoes/{{estacao_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["estacoes", "{{estacao_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Verificar Disponibilidade",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/estacoes/{{estacao_id}}/disponibilidade?data={{data_teste}}",
+              "host": ["{{base_url}}"],
+              "path": ["estacoes", "{{estacao_id}}", "disponibilidade"],
+              "query": [
+                {
+                  "key": "data",
+                  "value": "{{data_teste}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reservas",
+      "item": [
+        {
+          "name": "Listar Minhas Reservas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reservas",
+              "host": ["{{base_url}}"],
+              "path": ["reservas"]
+            }
+          }
+        },
+        {
+          "name": "Criar Reserva",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json();",
+                  "  pm.environment.set('reserva_id', data.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\\n  \\\"estacao_id\\\": 1,\\n  \\\"data\\\": \\\"2026-08-25\\\",\\n  \\\"horario_inicio\\\": \\\"09:00\\\",\\n  \\\"horario_fim\\\": \\\"13:00\\\",\\n  \\\"observacoes\\\": \\\"Sessão de realismo\\\"\\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/reservas",
+              "host": ["{{base_url}}"],
+              "path": ["reservas"]
+            }
+          }
+        },
+        {
+          "name": "Obter Detalhes da Reserva",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reservas/{{reserva_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["reservas", "{{reserva_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Cancelar Reserva",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reservas/{{reserva_id}}/cancelar",
+              "host": ["{{base_url}}"],
+              "path": ["reservas", "{{reserva_id}}", "cancelar"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost/inkstation/public/api"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "usuario_id",
+      "value": ""
+    },
+    {
+      "key": "estacao_id",
+      "value": "1"
+    },
+    {
+      "key": "reserva_id",
+      "value": ""
+    },
+    {
+      "key": "data_teste",
+      "value": "2026-08-25"
+    }
+  ]
+}
