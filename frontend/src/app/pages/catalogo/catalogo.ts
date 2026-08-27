@@ -9,8 +9,9 @@ import { Estacao, EstacaoService } from '../../services/estacao.service';
   styleUrl: './catalogo.scss',
 })
 export class Catalogo implements OnInit {
-  estacoes: Estacao[] = [];
-  carregando = true;
+  private static readonly CACHE_KEY = 'inkstation-estacoes-cache';
+  estacoes: Estacao[] = this.carregarCache();
+  carregando = this.estacoes.length === 0;
   erro = '';
 
   constructor(private estacaoService: EstacaoService) {}
@@ -20,6 +21,7 @@ export class Catalogo implements OnInit {
       next: (response) => {
         this.estacoes = response.data ?? [];
         this.carregando = false;
+        localStorage.setItem(Catalogo.CACHE_KEY, JSON.stringify(this.estacoes));
       },
       error: () => {
         this.erro = 'Não foi possível carregar as estações.';
@@ -42,6 +44,16 @@ export class Catalogo implements OnInit {
   recursos(estacao: Estacao): string[] {
     if (Array.isArray(estacao.recursos)) return estacao.recursos;
     try { return estacao.recursos ? JSON.parse(estacao.recursos) as string[] : []; } catch { return []; }
+  }
+
+  private carregarCache(): Estacao[] {
+    try {
+      const cache = localStorage.getItem(Catalogo.CACHE_KEY);
+      const estacoes = cache ? JSON.parse(cache) as Estacao[] : [];
+      return Array.isArray(estacoes) ? estacoes : [];
+    } catch {
+      return [];
+    }
   }
 }
 
