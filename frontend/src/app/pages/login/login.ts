@@ -73,7 +73,9 @@ export class Login {
         });
       },
       error: (error) => {
-        this.erro = error.error?.message ?? 'Erro ao realizar cadastro.';
+        this.erro = error.status === 409
+          ? 'Este e-mail já possui cadastro. Volte para o login e entre com sua senha.'
+          : error.error?.message ?? 'Erro ao realizar cadastro.';
       },
     });
   }
