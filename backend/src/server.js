@@ -36,10 +36,24 @@ function recursosDaEstacao(valor) {
 }
 
 function minutosDoHorario(horario) {
-    const partes = String(horario).split(':').map(Number);
-    return partes.length === 2 && partes.every(Number.isFinite) && partes[0] >= 0 && partes[0] <= 23 && partes[1] >= 0 && partes[1] <= 59
-        ? partes[0] * 60 + partes[1]
-        : NaN;
+    const valor = String(horario ?? '').trim();
+    const partes = valor.match(/^(\d{2}):(\d{2})(?::(\d{2}))?$/);
+    if (!partes) return NaN;
+    const horas = Number(partes[1]);
+    const minutos = Number(partes[2]);
+    const segundos = Number(partes[3] || 0);
+    return horas <= 23 && minutos <= 59 && segundos <= 59 ? horas * 60 + minutos : NaN;
+}
+
+function horarioNormalizado(horario) {
+    const valor = String(horario ?? '').trim();
+    const partes = valor.match(/^(\d{2}):(\d{2})(?::(\d{2}))?$/);
+    if (!partes) return null;
+    const horas = Number(partes[1]);
+    const minutos = Number(partes[2]);
+    const segundos = Number(partes[3] || 0);
+    if (horas > 23 || minutos > 59 || segundos > 59) return null;
+    return `${partes[1]}:${partes[2]}:${String(segundos).padStart(2, '0')}`;
 }
 
 function dataValida(data) {
@@ -259,9 +273,12 @@ api.get('/reservas', autenticado, async (req, res) => {
 
 api.post('/reservas', autenticado, async (req, res) => {
     const { estacao_id, data, horario_inicio, horario_fim, observacoes = '' } = req.body;
-    const inicio = minutosDoHorario(horario_inicio);
-    const fim = minutosDoHorario(horario_fim);
-    if (!estacao_id || !dataValida(data) || !Number.isFinite(inicio) || !Number.isFinite(fim) || inicio >= fim) {
+    const estacaoId = Number(estacao_id);
+    const horarioInicio = horarioNormalizado(horario_inicio);
+    const horarioFim = horarioNormalizado(horario_fim);
+    const inicio = minutosDoHorario(horarioInicio);
+    const fim = minutosDoHorario(horarioFim);
+    if (!Number.isInteger(estacaoId) || estacaoId <= 0 || !dataValida(data) || !Number.isFinite(inicio) || !Number.isFinite(fim) || inicio >= fim) {
         return resposta(res, 400, 'Estação, data e horários válidos são obrigatórios');
     }
 
@@ -270,7 +287,7 @@ api.post('/reservas', autenticado, async (req, res) => {
         connection = await db.getConnection();
         await connection.beginTransaction();
         const [stations] = await connection.execute(
-            'SELECT id, preco FROM estacoes WHERE id = ? AND ativo = 1 FOR UPDATE', [estacao_id]
+            'SELECT id, preco FROM estacoes WHERE id = ? AND ativo = 1 FOR UPDATE', [estacaoId]
         );
         if (!stations.length) {
             await connection.rollback();
@@ -280,7 +297,7 @@ api.post('/reservas', autenticado, async (req, res) => {
             `SELECT id FROM reservas WHERE estacao_id = ? AND entrada_data = ?
              AND status IN ('CONFIRMADA', 'PENDENTE')
              AND entrada_hora < ? AND saida_hora > ? FOR UPDATE`,
-            [estacao_id, data, horario_fim, horario_inicio]
+            [estacaoId, data, horarioFim, horarioInicio]
         );
         if (conflicts.length) {
             await connection.rollback();
@@ -292,12 +309,13 @@ api.post('/reservas', autenticado, async (req, res) => {
             `INSERT INTO reservas
                 (usuario_id, estacao_id, entrada_data, entrada_hora, saida_data, saida_hora, observacoes, status)
              VALUES (?, ?, ?, ?, ?, ?, ?, 'CONFIRMADA')`,
-            [req.usuario.id, estacao_id, data, horario_inicio, data, horario_fim, observacoes]
+            [req.usuario.id, estacaoId, data, horarioInicio, data, horarioFim, observacoes]
         );
         await connection.commit();
-        return resposta(res, 201, 'Reserva criada com sucesso', { id: result.insertId, estacao_id, data, horario_inicio, horario_fim, duracao: duration, valor_total: total, status: 'confirmada' });
+        return resposta(res, 201, 'Reserva criada com sucesso', { id: result.insertId, estacao_id: estacaoId, data, horario_inicio: horarioInicio, horario_fim: horarioFim, duracao: duration, valor_total: total, status: 'confirmada' });
     } catch (error) {
         if (connection) await connection.rollback();
+        if (error.code === 'ER_DUP_ENTRY') return resposta(res, 409, 'Horário já está reservado');
         console.error(error);
         return resposta(res, 500, 'Erro interno do servidor');
     } finally {
