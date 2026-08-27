@@ -86,14 +86,17 @@ export class Agendamento implements OnInit {
       return;
     }
 
-    const reservaCriada = this.reservasService.adicionarReserva(
+    this.reservasService.adicionarReserva(
       this.selectedEstacao?.id ?? 0,
       this.dataSessao,
       this.horarioInicio,
       this.horarioFim,
       this.observacoes,
     ).subscribe({
-      next: () => this.router.navigate(['/minhas-reservas']),
+      next: () => {
+        this.reservasService.carregarReservas();
+        this.router.navigate(['/minhas-reservas']);
+      },
       error: (error) => {
         this.erro = error.status === 409
           ? 'Este horário já está reservado. Escolha outro período.'

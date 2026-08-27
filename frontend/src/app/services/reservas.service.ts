@@ -30,10 +30,14 @@ export class ReservasService {
   constructor(private http: HttpClient) {}
 
   carregarReservas(): void {
-    this.http.get<{ data: Reserva[] }>(`${this.apiUrl}/reservas`).subscribe({
-      next: (response) => this.reservasSubject.next(response.data ?? []),
+    this.http.get<{ data?: Reserva[] } | Reserva[]>(`${this.apiUrl}/reservas`).subscribe({
+      next: (response) => {
+        const reservas = Array.isArray(response) ? response : response.data ?? [];
+        this.reservasSubject.next(reservas);
+      },
       error: (error) => {
-        if (error.status === 401) this.reservasSubject.next([]);
+        this.reservasSubject.next([]);
+        console.error('Erro ao carregar reservas:', error);
       },
     });
   }
