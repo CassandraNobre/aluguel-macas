@@ -1,22 +1,34 @@
-# AluguelMacas
+# InkStation
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.21.
+Sistema de coworking para tatuadores reservarem estações de trabalho.
+
+## Estrutura
+
+```text
+aluguel-macas/
+├── frontend/       # Aplicação Angular
+├── backend/        # API a ser adicionada
+└── README.md
+```
 
 ## Development server
 
-To start a local development server, run:
+Entre na pasta do frontend antes de executar os comandos:
 
 ```bash
+cd frontend
+npm install
 ng serve
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Depois, abra `http://localhost:4200/`.
 
 ## Code scaffolding
 
 Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
 
 ```bash
+cd frontend
 ng generate component component-name
 ```
 
@@ -31,16 +43,18 @@ ng generate --help
 To build the project run:
 
 ```bash
+cd frontend
 ng build
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+O build será gerado em `frontend/dist/`.
 
 ## Running unit tests
 
 To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
 
 ```bash
+cd frontend
 ng test
 ```
 
@@ -49,6 +63,7 @@ ng test
 For end-to-end (e2e) testing, run:
 
 ```bash
+cd frontend
 ng e2e
 ```
 
