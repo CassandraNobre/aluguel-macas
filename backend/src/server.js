@@ -1,12 +1,14 @@
 const crypto = require('crypto');
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const { OAuth2Client } = require('google-auth-library');
 const db = require('./config/database');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const api = express.Router();
+const googleClient = process.env.GOOGLE_CLIENT_ID ? new OAuth2Client(process.env.GOOGLE_CLIENT_ID) : null;
 const originsPermitidas = new Set([
     'http://localhost:4200',
     'https://aluguel-macas.vercel.app',
@@ -73,8 +75,16 @@ app.use((req, res, next) => {
         res.header('Vary', 'Origin');
     }
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
     if (req.method === 'OPTIONS') return res.sendStatus(204);
+    
+    console.log('📨 REQUEST:', {
+        method: req.method,
+        path: req.path,
+        origin: req.get('Origin'),
+        headers: req.headers
+    });
+    
     next();
 });
 
@@ -178,23 +188,34 @@ api.post('/auth/register', async (req, res) => {
     }
 });
 
+async function gerarTokenSessao(usuarioId) {
+    const token = crypto.randomBytes(32).toString('hex');
+    const hash = crypto.createHash('sha256').update(token).digest('hex');
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+    await db.execute(
+        `INSERT INTO auth_tokens (usuario_id, token_hash, expires_at)
+         VALUES (?, ?, ?)`,
+        [usuarioId, hash, expiresAt.toISOString()]
+    );
+    return token;
+}
+
 api.post('/auth/login', async (req, res) => {
     try {
         const { email, senha } = req.body;
+        console.log('🔐 LOGIN ATTEMPT:', { email, senhaRecebida: !!senha });
+        
         const [rows] = await db.execute('SELECT * FROM usuarios WHERE email = ? AND ativo = 1', [email]);
+        console.log('👤 USUARIO ENCONTRADO:', rows.length > 0 ? rows[0].email : 'NENHUM');
+        
         if (!rows.length || !(await bcrypt.compare(senha || '', rows[0].senha_hash))) {
+            console.log('❌ FALHA NO LOGIN');
             return resposta(res, 401, 'E-mail ou senha inválidos');
         }
 
-        const token = crypto.randomBytes(32).toString('hex');
-        const hash = crypto.createHash('sha256').update(token).digest('hex');
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 7);
-        await db.execute(
-            `INSERT INTO auth_tokens (usuario_id, token_hash, expires_at)
-             VALUES (?, ?, ?)`,
-            [rows[0].id, hash, expiresAt.toISOString()]
-        );
+        const token = await gerarTokenSessao(rows[0].id);
+        console.log('✅ LOGIN SUCESSO:', { usuarioId: rows[0].id, email });
         return resposta(res, 200, 'Login realizado com sucesso', {
             token,
             user: { id: rows[0].id, nome_artistico: rows[0].nome, nome: rows[0].nome, email: rows[0].email }
@@ -202,6 +223,48 @@ api.post('/auth/login', async (req, res) => {
     } catch (error) {
         console.error(error);
         return resposta(res, 500, 'Erro interno do servidor');
+    }
+});
+
+api.post('/auth/google', async (req, res) => {
+    if (!googleClient) {
+        return resposta(res, 500, 'Login com Google não está configurado no servidor');
+    }
+
+    try {
+        const { credential } = req.body;
+        if (!credential) return resposta(res, 400, 'Credencial do Google é obrigatória');
+
+        const ticket = await googleClient.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        if (!payload?.email) return resposta(res, 401, 'Não foi possível validar a conta Google');
+
+        const [existentes] = await db.execute('SELECT * FROM usuarios WHERE email = ? OR google_id = ?', [payload.email, payload.sub]);
+        let usuario = existentes[0];
+
+        if (!usuario) {
+            const senhaAleatoria = await bcrypt.hash(crypto.randomBytes(24).toString('hex'), 12);
+            const [result] = await db.execute(
+                'INSERT INTO usuarios (nome, email, senha_hash, google_id, email_verificado) VALUES (?, ?, ?, ?, 1)',
+                [payload.name || payload.email, payload.email, senhaAleatoria, payload.sub]
+            );
+            usuario = { id: result.insertId, nome: payload.name || payload.email, email: payload.email };
+        } else if (!usuario.google_id) {
+            await db.execute('UPDATE usuarios SET google_id = ? WHERE id = ?', [payload.sub, usuario.id]);
+        }
+
+        const token = await gerarTokenSessao(usuario.id);
+        console.log('✅ LOGIN GOOGLE SUCESSO:', { usuarioId: usuario.id, email: usuario.email });
+        return resposta(res, 200, 'Login com Google realizado com sucesso', {
+            token,
+            user: { id: usuario.id, nome_artistico: usuario.nome, nome: usuario.nome, email: usuario.email }
+        });
+    } catch (error) {
+        console.error('Erro no login com Google:', error);
+        return resposta(res, 401, 'Não foi possível validar a conta Google');
     }
 });
 
@@ -244,6 +307,29 @@ api.get('/estacoes/:id', async (req, res) => {
             recursos: recursosDaEstacao(estacao.recursos),
             ativa: Boolean(estacao.ativa)
         });
+    } catch (error) {
+        console.error(error);
+        return resposta(res, 500, 'Erro interno do servidor');
+    }
+});
+
+api.get('/estacoes/:id/horarios', async (req, res) => {
+    const estacaoId = Number(req.params.id);
+    const data = req.query.data;
+
+    if (!Number.isInteger(estacaoId) || estacaoId <= 0 || !dataValida(data)) {
+        return resposta(res, 400, 'Informe uma estação e data válidas');
+    }
+
+    try {
+        const [rows] = await db.execute(
+            `SELECT entrada_hora AS horario_inicio, saida_hora AS horario_fim
+             FROM reservas
+             WHERE estacao_id = ? AND entrada_data = ? AND status IN ('CONFIRMADA', 'PENDENTE')
+             ORDER BY entrada_hora`,
+            [estacaoId, data]
+        );
+        return resposta(res, 200, 'Horários ocupados carregados', rows);
     } catch (error) {
         console.error(error);
         return resposta(res, 500, 'Erro interno do servidor');
@@ -333,6 +419,20 @@ api.patch('/reservas/:id/cancelar', autenticado, async (req, res) => {
         );
         if (!result.affectedRows) return resposta(res, 404, 'Reserva não encontrada ou não pode ser cancelada');
         return resposta(res, 200, 'Reserva cancelada com sucesso', { id: Number(req.params.id), status: 'cancelada' });
+    } catch (error) {
+        console.error(error);
+        return resposta(res, 500, 'Erro interno do servidor');
+    }
+});
+
+api.delete('/reservas/:id', autenticado, async (req, res) => {
+    try {
+        const [result] = await db.execute(
+            `DELETE FROM reservas WHERE id = ? AND usuario_id = ?`,
+            [req.params.id, req.usuario.id]
+        );
+        if (!result.affectedRows) return resposta(res, 404, 'Reserva não encontrada');
+        return resposta(res, 200, 'Reserva apagada com sucesso', { id: Number(req.params.id) });
     } catch (error) {
         console.error(error);
         return resposta(res, 500, 'Erro interno do servidor');

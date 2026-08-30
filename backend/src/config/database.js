@@ -264,17 +264,33 @@ function createFallbackDatabase() {
             return [rows];
         }
 
+        if (normalizedSql.includes('SELECT entrada_hora AS horario_inicio, saida_hora AS horario_fim')) {
+            const [estacaoId, data] = args;
+            const rows = store.reservas
+                .filter((reserva) => reserva.estacao_id === Number(estacaoId) && reserva.entrada_data === data && ['CONFIRMADA', 'PENDENTE'].includes(reserva.status))
+                .sort((a, b) => a.entrada_hora.localeCompare(b.entrada_hora))
+                .map(({ entrada_hora, saida_hora }) => ({ horario_inicio: entrada_hora, horario_fim: saida_hora }));
+            return [rows];
+        }
+
         if (normalizedSql.includes('UPDATE reservas SET status =')) {
-            const [status, id, usuarioId] = args;
+            const [id, usuarioId] = args;
             let affected = 0;
             store.reservas = store.reservas.map((reserva) => {
                 if (reserva.id === Number(id) && reserva.usuario_id === Number(usuarioId) && ['CONFIRMADA', 'PENDENTE'].includes(reserva.status)) {
                     affected += 1;
-                    return { ...reserva, status, atualizado_em: new Date().toISOString() };
+                    return { ...reserva, status: 'CANCELADA', atualizado_em: new Date().toISOString() };
                 }
                 return reserva;
             });
             return [{ affectedRows: affected }];
+        }
+
+        if (normalizedSql.includes('DELETE FROM reservas WHERE id = ? AND usuario_id = ?')) {
+            const [id, usuarioId] = args;
+            const antes = store.reservas.length;
+            store.reservas = store.reservas.filter((reserva) => !(reserva.id === Number(id) && reserva.usuario_id === Number(usuarioId)));
+            return [{ affectedRows: antes - store.reservas.length }];
         }
 
         if (normalizedSql.includes('SELECT id, preco FROM estacoes WHERE id = ? AND ativo = 1')) {

@@ -9,30 +9,40 @@
       <form class="booking-form" (ngSubmit)="confirmar()">
         <label class="field-group">
           <span>Data da sessão</span>
-          <input type="date" name="dataSessao" [(ngModel)]="dataSessao" [min]="dataMinima" required />
+          <input type="date" name="dataSessao" [(ngModel)]="dataSessao" [min]="dataMinima" (ngModelChange)="atualizarHorariosOcupados()" required />
         </label>
 
-        <div class="time-row">
-          <label class="field-group">
-            <span>Horário de início</span>
-            <input type="time" name="horarioInicio" [(ngModel)]="horarioInicio" (ngModelChange)="atualizarHorarioFinal()" required />
-          </label>
-
-          <label class="field-group">
-            <span>Horário de término</span>
-            <input type="time" name="horarioFim" [(ngModel)]="horarioFim" required />
-          </label>
-        </div>
-
         <label class="field-group">
-          <span>Estimativa de duração</span>
-          <select name="duracaoEstimada" [(ngModel)]="duracaoEstimada" (ngModelChange)="atualizarHorarioFinal()">
+          <span>Duração da sessão</span>
+          <select name="duracaoEstimada" [(ngModel)]="duracaoEstimada" (ngModelChange)="aoMudarDuracao()">
             <option [ngValue]="2">2 horas</option>
             <option [ngValue]="4">4 horas</option>
             <option [ngValue]="6">6 horas</option>
             <option [ngValue]="8">Diária (8 horas)</option>
           </select>
         </label>
+
+        <div class="field-group">
+          <span>Horários disponíveis nesta data</span>
+          @if (carregandoHorarios) {
+            <p class="horarios-indisponivel">Carregando horários...</p>
+          } @else if (slotsDisponiveis.length) {
+            <div class="horarios-lista">
+              @for (slot of slotsDisponiveis; track slot.inicio) {
+                <button
+                  type="button"
+                  class="horario-chip"
+                  [class.selecionado]="horarioSelecionado?.inicio === slot.inicio"
+                  (click)="selecionarHorario(slot.inicio, slot.fim)"
+                >
+                  {{ slot.inicio }} - {{ slot.fim }}
+                </button>
+              }
+            </div>
+          } @else {
+            <p class="horarios-indisponivel">Nenhum horário disponível para essa duração nesta data. Tente outra data ou duração menor.</p>
+          }
+        </div>
 
         <label class="field-group">
           <span>Observações da sessão</span>
@@ -48,7 +58,7 @@
           <p class="booking-error" role="alert">{{ erro }}</p>
         }
 
-        <button type="submit" class="confirm-button">Confirmar agendamento</button>
+        <button type="submit" class="confirm-button" [disabled]="!horarioSelecionado">Confirmar agendamento</button>
       </form>
 
       <aside class="summary-panel">
@@ -61,7 +71,7 @@
 
         <div class="summary-item">
           <span>Período</span>
-          <strong>{{ dataResumo }} · {{ horarioInicio }} às {{ horarioFim }}</strong>
+          <strong>{{ dataResumo }} · {{ periodoFormatado }}</strong>
         </div>
 
         <div class="summary-item">

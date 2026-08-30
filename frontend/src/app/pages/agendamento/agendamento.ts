@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Estacao, EstacaoService } from '../../services/estacao.service';
+import { Estacao, EstacaoService, HorarioOcupado } from '../../services/estacao.service';
 import { ReservasService } from '../../services/reservas.service';
 
 @Component({
@@ -13,41 +13,47 @@ import { ReservasService } from '../../services/reservas.service';
 export class Agendamento implements OnInit {
   selectedEstacao: Estacao | null = null;
   readonly dataMinima = this.formatarDataInput(new Date());
+  readonly horarioAbertura = '08:00';
+  readonly horarioFechamento = '20:00';
   dataSessao = this.dataMinima;
-  horarioInicio = '09:00';
-  horarioFim = '13:00';
   duracaoEstimada = 4;
+  horarioSelecionado: { inicio: string; fim: string } | null = null;
   observacoes = '';
   biosseguranca = true;
   erro = '';
+  horariosOcupados: HorarioOcupado[] = [];
+  carregandoHorarios = false;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private estacaoService: EstacaoService,
     private reservasService: ReservasService,
+    private changeDetectorRef: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
     const estacaoId = Number(this.route.snapshot.queryParamMap.get('estacaoId') ?? '1');
     this.estacaoService.buscarEstacao(estacaoId).subscribe({
-      next: (response) => this.selectedEstacao = response.data,
-      error: () => this.erro = 'Não foi possível carregar a estação selecionada.',
+      next: (response) => {
+        this.selectedEstacao = response.data;
+        this.atualizarHorariosOcupados();
+        this.changeDetectorRef.markForCheck();
+      },
+      error: () => {
+        this.erro = 'Não foi possível carregar a estação selecionada.';
+        this.changeDetectorRef.markForCheck();
+      },
     });
+    this.atualizarHorariosOcupados();
   }
 
   get valorTotal(): number {
-    return (this.selectedEstacao?.preco_por_hora ?? 0) * this.horasReservadas;
-  }
-
-  get horasReservadas(): number {
-    const inicio = this.converterHora(this.horarioInicio);
-    const fim = this.converterHora(this.horarioFim);
-    return inicio !== null && fim !== null && fim > inicio ? (fim - inicio) / 60 : 0;
+    return (this.selectedEstacao?.preco_por_hora ?? 0) * this.duracaoEstimada;
   }
 
   get periodoFormatado(): string {
-    return `${this.horarioInicio} - ${this.horarioFim}`;
+    return this.horarioSelecionado ? `${this.horarioSelecionado.inicio} - ${this.horarioSelecionado.fim}` : 'Selecione um horário';
   }
 
   get dataResumo(): string {
@@ -55,17 +61,60 @@ export class Agendamento implements OnInit {
     return mes && dia ? `${dia}/${mes}` : '--/--';
   }
 
-  atualizarHorarioFinal(): void {
-    const inicio = this.converterHora(this.horarioInicio);
+  get slotsDisponiveis(): { inicio: string; fim: string }[] {
+    const abertura = this.converterHora(this.horarioAbertura) ?? 0;
+    const fechamento = this.converterHora(this.horarioFechamento) ?? 0;
+    const duracaoMinutos = this.duracaoEstimada * 60;
+    const ocupados = [...this.horariosOcupados]
+      .map((ocupado) => ({
+        inicio: this.converterHora(ocupado.horario_inicio),
+        fim: this.converterHora(ocupado.horario_fim),
+      }))
+      .filter((bloco): bloco is { inicio: number; fim: number } => bloco.inicio !== null && bloco.fim !== null);
 
-    if (inicio === null) {
+    const slots: { inicio: string; fim: string }[] = [];
+
+    for (let inicio = abertura; inicio + duracaoMinutos <= fechamento; inicio += 60) {
+      const fim = inicio + duracaoMinutos;
+      const conflita = ocupados.some((bloco) => inicio < bloco.fim && fim > bloco.inicio);
+      if (!conflita) {
+        slots.push({ inicio: this.formatarHora(inicio), fim: this.formatarHora(fim) });
+      }
+    }
+
+    return slots;
+  }
+
+  selecionarHorario(inicio: string, fim: string): void {
+    this.horarioSelecionado = { inicio, fim };
+  }
+
+  aoMudarDuracao(): void {
+    this.horarioSelecionado = null;
+  }
+
+  atualizarHorariosOcupados(): void {
+    const estacaoId = this.selectedEstacao?.id ?? Number(this.route.snapshot.queryParamMap.get('estacaoId') ?? '1');
+    this.horarioSelecionado = null;
+
+    if (!estacaoId || !this.dataSessao) {
+      this.horariosOcupados = [];
       return;
     }
 
-    const fim = inicio + this.duracaoEstimada * 60;
-    const horas = Math.floor(fim / 60).toString().padStart(2, '0');
-    const minutos = (fim % 60).toString().padStart(2, '0');
-    this.horarioFim = `${horas}:${minutos}`;
+    this.carregandoHorarios = true;
+    this.estacaoService.buscarHorariosOcupados(estacaoId, this.dataSessao).subscribe({
+      next: (response) => {
+        this.horariosOcupados = response.data ?? [];
+        this.carregandoHorarios = false;
+        this.changeDetectorRef.markForCheck();
+      },
+      error: () => {
+        this.horariosOcupados = [];
+        this.carregandoHorarios = false;
+        this.changeDetectorRef.markForCheck();
+      },
+    });
   }
 
   confirmar(): void {
@@ -76,8 +125,8 @@ export class Agendamento implements OnInit {
       return;
     }
 
-    if (this.horasReservadas <= 0) {
-      this.erro = 'O horário de término deve ser posterior ao horário de início.';
+    if (!this.horarioSelecionado) {
+      this.erro = 'Selecione um horário disponível para a sessão.';
       return;
     }
 
@@ -89,8 +138,8 @@ export class Agendamento implements OnInit {
     this.reservasService.adicionarReserva(
       this.selectedEstacao?.id ?? 0,
       this.dataSessao,
-      this.horarioInicio,
-      this.horarioFim,
+      this.horarioSelecionado.inicio,
+      this.horarioSelecionado.fim,
       this.observacoes,
     ).subscribe({
       next: () => {
@@ -101,6 +150,8 @@ export class Agendamento implements OnInit {
         this.erro = error.status === 409
           ? 'Este horário já está reservado. Escolha outro período.'
           : error.error?.message ?? 'Não foi possível criar a reserva.';
+        this.atualizarHorariosOcupados();
+        this.changeDetectorRef.markForCheck();
       },
     });
   }
@@ -108,6 +159,12 @@ export class Agendamento implements OnInit {
   private converterHora(hora: string): number | null {
     const [horas, minutos] = hora.split(':').map(Number);
     return Number.isFinite(horas) && Number.isFinite(minutos) ? horas * 60 + minutos : null;
+  }
+
+  private formatarHora(minutos: number): string {
+    const horas = Math.floor(minutos / 60).toString().padStart(2, '0');
+    const min = (minutos % 60).toString().padStart(2, '0');
+    return `${horas}:${min}`;
   }
 
   private formatarDataInput(data: Date): string {

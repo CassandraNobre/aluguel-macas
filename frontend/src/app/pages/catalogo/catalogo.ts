@@ -38,7 +38,7 @@ export class Catalogo implements OnInit {
       4: 'img/Estacao_04_Workstation_Inox_Luz_Direcionada.png',
     };
 
-    return estacao.imagem_url ?? imagensLocais[estacao.id] ?? 'img/Estacao_01_Maca_Hidraulica_Inox.png';
+    return imagensLocais[estacao.id] ?? estacao.imagem_url ?? 'img/Estacao_01_Maca_Hidraulica_Inox.png';
   }
 
   recursos(estacao: Estacao): string[] {

@@ -1,25 +1,31 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { AsyncPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Reserva, ReservasService } from '../../services/reservas.service';
 
 @Component({
   selector: 'app-minhas-reservas',
-  imports: [RouterLink],
+  imports: [RouterLink, AsyncPipe],
   templateUrl: './minhas-reservas.html',
   styleUrl: './minhas-reservas.scss',
 })
 export class MinhasReservas implements OnInit {
-  reservas: Reserva[] = [];
+  readonly reservas$;
 
-  constructor(private reservasService: ReservasService) {}
+  constructor(
+    private reservasService: ReservasService,
+    private changeDetectorRef: ChangeDetectorRef,
+  ) {
+    this.reservas$ = this.reservasService.reservas$;
+  }
 
   ngOnInit(): void {
-    this.reservasService.reservas$.subscribe((reservas) => this.reservas = reservas);
     this.reservasService.carregarReservas();
   }
 
   podeCancelar(reserva: Reserva): boolean {
-    return reserva.status === 'confirmada' || reserva.status === 'pendente';
+    const status = reserva.status.toLowerCase();
+    return status === 'confirmada' || status === 'pendente';
   }
 
   cancelar(reserva: Reserva): void {
@@ -35,7 +41,26 @@ export class MinhasReservas implements OnInit {
 
     this.reservasService.cancelarReserva(reserva.id).subscribe({
       next: () => this.reservasService.carregarReservas(),
-      error: (error) => this.erro = error.error?.message ?? 'Erro ao cancelar reserva.',
+      error: (error) => {
+        this.erro = error.error?.message ?? 'Erro ao cancelar reserva.';
+        this.changeDetectorRef.markForCheck();
+      },
+    });
+  }
+
+  apagar(reserva: Reserva): void {
+    const confirmar = window.confirm(`Deseja apagar definitivamente a reserva da ${this.nomeEstacao(reserva)}? Esta ação não pode ser desfeita.`);
+
+    if (!confirmar) {
+      return;
+    }
+
+    this.reservasService.apagarReserva(reserva.id).subscribe({
+      next: () => this.reservasService.carregarReservas(),
+      error: (error) => {
+        this.erro = error.error?.message ?? 'Erro ao apagar reserva.';
+        this.changeDetectorRef.markForCheck();
+      },
     });
   }
 
@@ -55,11 +80,13 @@ export class MinhasReservas implements OnInit {
   }
 
   valor(reserva: Reserva): string {
-    if (typeof reserva.valor_total !== 'number') {
+    const numero = Number(reserva.valor_total);
+
+    if (!Number.isFinite(numero)) {
       return reserva.valor ?? 'Não informado';
     }
 
-    return `R$ ${reserva.valor_total.toFixed(2).replace('.', ',')}`;
+    return `R$ ${numero.toFixed(2).replace('.', ',')}`;
   }
 }
 

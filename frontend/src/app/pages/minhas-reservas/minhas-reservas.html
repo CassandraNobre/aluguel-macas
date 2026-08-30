@@ -20,7 +20,7 @@
         </tr>
       </thead>
       <tbody>
-        @for (reserva of reservas; track reserva.id) {
+        @for (reserva of reservas$ | async; track reserva.id) {
           <tr>
             <td>{{ nomeEstacao(reserva) }}</td>
             <td>{{ reserva.data }}</td>
@@ -30,10 +30,13 @@
             <td>
               @if (podeCancelar(reserva)) {
                 <button type="button" class="cancel-button" (click)="cancelar(reserva)">Cancelar</button>
-              } @else {
-                <span class="no-action">Sem ações</span>
               }
+              <button type="button" class="delete-button" (click)="apagar(reserva)">Apagar</button>
             </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="no-reservas">Nenhuma reserva encontrada.</td>
           </tr>
         }
       </tbody>

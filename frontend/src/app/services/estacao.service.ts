@@ -16,6 +16,11 @@ export interface Estacao {
   avaliacao?: number;
 }
 
+export interface HorarioOcupado {
+  horario_inicio: string;
+  horario_fim: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class EstacaoService {
   private readonly apiUrl = API_URL;
@@ -28,5 +33,9 @@ export class EstacaoService {
 
   buscarEstacao(id: number): Observable<{ data: Estacao }> {
     return this.http.get<{ data: Estacao }>(`${this.apiUrl}/estacoes/${id}`);
+  }
+
+  buscarHorariosOcupados(estacaoId: number, data: string): Observable<{ data: HorarioOcupado[] }> {
+    return this.http.get<{ data: HorarioOcupado[] }>(`${this.apiUrl}/estacoes/${estacaoId}/horarios`, { params: { data } });
   }
 }

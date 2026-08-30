@@ -49,4 +49,8 @@ export class ReservasService {
   cancelarReserva(id: number): Observable<unknown> {
     return this.http.patch(`${this.apiUrl}/reservas/${id}/cancelar`, {});
   }
+
+  apagarReserva(id: number): Observable<unknown> {
+    return this.http.delete(`${this.apiUrl}/reservas/${id}`);
+  }
 }

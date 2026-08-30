@@ -56,6 +56,16 @@ export class AuthService {
     );
   }
 
+  entrarComGoogle(credential: string): Observable<ApiResponse<LoginData>> {
+    return this.http.post<ApiResponse<LoginData>>(`${this.apiUrl}/auth/google`, { credential }).pipe(
+      tap((response) => {
+        localStorage.setItem(this.tokenKey, response.data.token);
+        localStorage.setItem(this.usuarioKey, JSON.stringify(response.data.user));
+        this.usuarioSubject.next(response.data.user);
+      }),
+    );
+  }
+
   cadastrar(nome_artistico: string, email: string, senha: string, confirmar_senha: string): Observable<ApiResponse<unknown>> {
     return this.http.post<ApiResponse<unknown>>(`${this.apiUrl}/auth/register`, {
       nome_artistico,

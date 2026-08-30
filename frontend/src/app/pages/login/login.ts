@@ -1,7 +1,10 @@
-import { Component } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { GOOGLE_CLIENT_ID } from '../../services/google-auth.config';
+
+declare const google: any;
 
 @Component({
   selector: 'app-login',
@@ -9,11 +12,13 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })
-export class Login {
+export class Login implements AfterViewInit {
+  @ViewChild('googleButton') googleButton?: ElementRef<HTMLDivElement>;
+
   modo: 'login' | 'cadastro' = 'login';
   nome = '';
-  email = 'joao@example.com';
-  senha = 'Senha123!';
+  email = 'artista@example.com';
+  senha = 'senha123456';
   confirmarSenha = '';
   lembrar = true;
   erro = '';
@@ -25,6 +30,45 @@ export class Login {
     private route: ActivatedRoute,
     private router: Router,
   ) {}
+
+  ngAfterViewInit(): void {
+    this.inicializarGoogle();
+  }
+
+  private inicializarGoogle(): void {
+    if (typeof google === 'undefined' || !this.googleButton || GOOGLE_CLIENT_ID.startsWith('SUBSTITUA')) {
+      return;
+    }
+
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: (response: { credential: string }) => this.aoReceberCredencialGoogle(response.credential),
+    });
+    google.accounts.id.renderButton(this.googleButton.nativeElement, {
+      theme: 'filled_black',
+      size: 'large',
+      width: 320,
+      text: 'continue_with',
+    });
+  }
+
+  private aoReceberCredencialGoogle(credential: string): void {
+    this.erro = '';
+    this.sucesso = '';
+    this.carregando = true;
+
+    this.authService.entrarComGoogle(credential).subscribe({
+      next: () => {
+        this.sucesso = 'Login com Google realizado com sucesso!';
+        this.carregando = false;
+        setTimeout(() => this.irParaDestino(), 800);
+      },
+      error: (error) => {
+        this.carregando = false;
+        this.erro = error.error?.message ?? 'Não foi possível entrar com o Google.';
+      },
+    });
+  }
 
   entrar(): void {
     this.erro = '';
@@ -53,7 +97,15 @@ export class Login {
 
   entrarComGoogle(): void {
     this.erro = '';
-    this.erro = 'O login com Google será habilitado pelo backend.';
+
+    if (GOOGLE_CLIENT_ID.startsWith('SUBSTITUA')) {
+      this.erro = 'Login com Google ainda não foi configurado (falta o Client ID).';
+      return;
+    }
+
+    if (typeof google !== 'undefined') {
+      google.accounts.id.prompt();
+    }
   }
 
   alternarModo(): void {
@@ -63,8 +115,8 @@ export class Login {
     this.nome = '';
     this.confirmarSenha = '';
     if (this.modo === 'login') {
-      this.email = 'joao@example.com';
-      this.senha = 'Senha123!';
+      this.email = 'artista@example.com';
+      this.senha = 'senha123456';
     } else {
       this.email = '';
       this.senha = '';
