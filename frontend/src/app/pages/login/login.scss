@@ -139,6 +139,36 @@
   line-height: 1.4;
 }
 
+.login-success {
+  margin: -0.35rem 0 0;
+  color: #9cff9b;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  padding: 0.65rem;
+  background: rgba(156, 255, 155, 0.1);
+  border-radius: 8px;
+  border-left: 3px solid #9cff9b;
+}
+
+.link-button {
+  border: none;
+  padding: 0;
+  background: transparent;
+  color: #bb86fc;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-top: 0.5rem;
+  transition: color 0.2s ease;
+}
+
+.link-button:hover,
+.link-button:focus-visible {
+  color: #d9b8ff;
+}
+
 .login-button {
   border: none;
   border-radius: 12px;
@@ -152,10 +182,16 @@
   box-shadow: 0 10px 22px rgba(138, 99, 255, 0.35);
 }
 
-.login-button:hover {
+.login-button:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 16px 28px rgba(138, 99, 255, 0.5);
   filter: brightness(1.05);
+}
+
+.login-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .divider {

@@ -188,10 +188,12 @@ api.post('/auth/login', async (req, res) => {
 
         const token = crypto.randomBytes(32).toString('hex');
         const hash = crypto.createHash('sha256').update(token).digest('hex');
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 7);
         await db.execute(
             `INSERT INTO auth_tokens (usuario_id, token_hash, expires_at)
-             VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY))`,
-            [rows[0].id, hash]
+             VALUES (?, ?, ?)`,
+            [rows[0].id, hash, expiresAt.toISOString()]
         );
         return resposta(res, 200, 'Login realizado com sucesso', {
             token,

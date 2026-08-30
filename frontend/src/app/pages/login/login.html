@@ -46,9 +46,18 @@
 
       @if (erro) {
         <p class="login-error" role="alert">{{ erro }}</p>
+        @if (modo === 'login') {
+          <button type="button" class="link-button" (click)="resetarSenha()">Criar nova conta com outra senha</button>
+        }
       }
 
-      <button type="submit" class="login-button">{{ modo === 'login' ? 'Entrar' : 'Criar cadastro' }}</button>
+      @if (sucesso) {
+        <p class="login-success" role="status">{{ sucesso }}</p>
+      }
+
+      <button type="submit" class="login-button" [disabled]="carregando">
+        {{ carregando ? 'Processando...' : (modo === 'login' ? 'Entrar' : 'Criar cadastro') }}
+      </button>
     </form>
 
     @if (modo === 'login') {
