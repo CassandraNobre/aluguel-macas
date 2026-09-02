@@ -155,25 +155,63 @@ api.post('/auth/register', async (req, res) => {
     try {
         const { nome_artistico, nome, email, senha, confirmar_senha } = req.body;
         const nomeFinal = nome_artistico || nome;
-        if (!nomeFinal || !email || !senha) return resposta(res, 400, 'Nome, e-mail e senha são obrigatórios');
+        
+        // Validação: campos obrigatórios
+        if (!nomeFinal || !email || !senha) {
+            return resposta(res, 400, 'Nome, e-mail e senha são obrigatórios');
+        }
+        
+        // Validação: email válido
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return resposta(res, 400, 'E-mail inválido');
+        }
+        
+        // Validação: confirmação de senha
         if (confirmar_senha !== undefined && senha !== confirmar_senha) {
             return resposta(res, 400, 'As senhas não conferem');
         }
-        if (senha.length < 8) return resposta(res, 400, 'A senha deve ter pelo menos 8 caracteres');
+        
+        // Validação: comprimento mínimo de senha
+        if (senha.length < 8) {
+            return resposta(res, 400, 'A senha deve ter pelo menos 8 caracteres');
+        }
 
+        // Verificação: email não duplicado
         const [existing] = await db.execute('SELECT id FROM usuarios WHERE email = ?', [email]);
-        if (existing.length) return resposta(res, 409, 'Este e-mail já está cadastrado');
+        if (existing.length) {
+            return resposta(res, 409, 'Este e-mail já está cadastrado');
+        }
 
+        // Criptografia: hash da senha
         const hash = await bcrypt.hash(senha, 12);
+        
+        // Inserção: novo usuário
         const [result] = await db.execute(
             'INSERT INTO usuarios (nome, email, senha_hash) VALUES (?, ?, ?)',
             [nomeFinal, email, hash]
         );
+        
+        // Validação: verificar se inserção foi bem-sucedida
+        if (!result.insertId) {
+            console.error('Falha ao inserir usuário:', result);
+            return resposta(res, 500, 'Erro ao cadastrar usuário');
+        }
+        
         return resposta(res, 201, 'Usuário cadastrado com sucesso', {
-            id: result.insertId, nome_artistico: nomeFinal, nome: nomeFinal, email
+            id: result.insertId,
+            nome_artistico: nomeFinal,
+            nome: nomeFinal,
+            email
         });
     } catch (error) {
-        console.error(error);
+        console.error('Erro no registro:', error);
+        
+        // Tratamento específico de erros
+        if (error.code === 'ER_DUP_ENTRY') {
+            return resposta(res, 409, 'Este e-mail já está cadastrado');
+        }
+        
         return resposta(res, 500, 'Erro interno do servidor');
     }
 });
@@ -181,8 +219,22 @@ api.post('/auth/register', async (req, res) => {
 api.post('/auth/login', async (req, res) => {
     try {
         const { email, senha } = req.body;
+        
+        // Validação: email e senha obrigatórios
+        if (!email || !senha) {
+            return resposta(res, 400, 'E-mail e senha são obrigatórios');
+        }
+        
         const [rows] = await db.execute('SELECT * FROM usuarios WHERE email = ? AND ativo = 1', [email]);
-        if (!rows.length || !(await bcrypt.compare(senha || '', rows[0].senha_hash))) {
+        
+        // Validação: usuário existe
+        if (!rows.length) {
+            return resposta(res, 401, 'E-mail ou senha inválidos');
+        }
+        
+        // Validação: senha correta (CORRIGIDO: verificar ANTES de acessar rows[0])
+        const senhaValida = await bcrypt.compare(senha, rows[0].senha_hash);
+        if (!senhaValida) {
             return resposta(res, 401, 'E-mail ou senha inválidos');
         }
 
