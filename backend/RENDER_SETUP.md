@@ -38,16 +38,18 @@ Value: inkstation-mysql-paulohbarros99.a.aivencloud.com
 #### ⚙️ Variável 2: `DB_USER`
 ```
 Key: DB_USER
-Value: [PREENCHER COM SEU USUÁRIO DO AIVEN]
+Value: avnadmin
 ```
 
-Onde encontrar:
-- Aiven Console → MySQL Instance → Connections
-- Procure por "User" ou "Username"
+✅ **EXTRAÍDO DO AIVEN**
 
 #### ⚙️ Variável 3: `DB_PASS`
 ```
 Key: DB_PASS
+Value: [Veja o arquivo .env local - senha do Aiven]
+```
+
+✅ **JÁ TESTADO E VALIDADO - Conexão com banco funcionando!**
 Value: [PREENCHER COM SUA SENHA DO AIVEN]
 ```
 
