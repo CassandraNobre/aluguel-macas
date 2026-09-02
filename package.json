@@ -4,9 +4,22 @@
   "description": "Script de inicialização unificada para o InkStation",
   "scripts": {
     "install:all": "npm install && npm install --prefix backend && npm install --prefix frontend",
-    "start": "concurrently --kill-others -n \"BACKEND,FRONTEND\" -c \"cyan,magenta\" \"npm start --prefix backend\" \"npm start --prefix frontend\""
+    "start": "concurrently --kill-others -n \"BACKEND,FRONTEND\" -c \"cyan,magenta\" \"npm start --prefix backend\" \"npm start --prefix frontend\"",
+    "build": "npm --prefix frontend run build",
+    "check:backend": "node --check backend/src/server.js"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
+  },
+  "private": "true",
+  "engines": {
+    "node": "20.x"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "google-auth-library": "^11.0.2",
+    "mysql2": "^3.24.3"
   }
 }
