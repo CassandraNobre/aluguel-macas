@@ -573,6 +573,59 @@ api.delete('/reservas/:id', autenticado, async (req, res) => {
     }
 });
 
+// Endpoint temporário para aplicar migrações de schema em produção sem acesso direto ao MySQL.
+// Protegido por token; remover após o uso.
+api.post('/admin/migrar', async (req, res) => {
+    const tokenEsperado = process.env.MIGRATION_TOKEN;
+    if (!tokenEsperado) return resposta(res, 403, 'Migração desabilitada (defina MIGRATION_TOKEN no ambiente)');
+    if (req.get('x-migration-token') !== tokenEsperado) return resposta(res, 401, 'Token de migração inválido');
+
+    const comandos = [
+        `ALTER TABLE reservas ADD COLUMN nome_cliente VARCHAR(255) NULL AFTER usuario_id`,
+        `ALTER TABLE reservas ADD COLUMN forma_pagamento ENUM('PIX', 'CARTAO_CREDITO', 'CARTAO_DEBITO', 'DINHEIRO') NOT NULL DEFAULT 'PIX' AFTER observacoes`,
+        `CREATE TABLE IF NOT EXISTS contas_recebimento (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            titular VARCHAR(255) NOT NULL,
+            tipo_chave_pix ENUM('CPF', 'CNPJ', 'EMAIL', 'TELEFONE', 'ALEATORIA') NOT NULL,
+            chave_pix VARCHAR(255) NOT NULL,
+            banco VARCHAR(100),
+            agencia VARCHAR(20),
+            conta VARCHAR(30),
+            ativo BOOLEAN DEFAULT 1,
+            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+        `CREATE TABLE IF NOT EXISTS pagamentos (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            reserva_id INT NOT NULL,
+            conta_recebimento_id INT NULL,
+            forma_pagamento ENUM('PIX', 'CARTAO_CREDITO', 'CARTAO_DEBITO', 'DINHEIRO') NOT NULL,
+            valor DECIMAL(10, 2) NOT NULL,
+            status ENUM('PENDENTE', 'PAGO', 'ESTORNADO', 'CANCELADO') DEFAULT 'PENDENTE',
+            comprovante_url VARCHAR(500),
+            pago_em TIMESTAMP NULL,
+            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (reserva_id) REFERENCES reservas(id) ON DELETE CASCADE,
+            FOREIGN KEY (conta_recebimento_id) REFERENCES contas_recebimento(id) ON DELETE SET NULL,
+            INDEX idx_reserva_id (reserva_id),
+            INDEX idx_status (status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    ];
+
+    const resultados = [];
+    for (const comando of comandos) {
+        try {
+            await db.execute(comando);
+            resultados.push({ ok: true, comando: comando.slice(0, 60) });
+        } catch (error) {
+            const jaExiste = ['ER_DUP_FIELDNAME', 'ER_TABLE_EXISTS_ERROR'].includes(error.code);
+            resultados.push({ ok: jaExiste, comando: comando.slice(0, 60), erro: jaExiste ? 'já existia' : error.message });
+        }
+    }
+
+    return resposta(res, 200, 'Migração processada', resultados);
+});
+
 api.post('/chatbot', async (req, res) => {
     const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
     if (!message) return resposta(res, 400, 'A mensagem é obrigatória');
