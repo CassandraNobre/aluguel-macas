@@ -1,5 +1,6 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { DecimalPipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Estacao, EstacaoService, HorarioOcupado } from '../../services/estacao.service';
 import { ReservasService } from '../../services/reservas.service';
@@ -7,7 +8,7 @@ import { ContaRecebimento, PagamentoService } from '../../services/pagamento.ser
 
 @Component({
   selector: 'app-agendamento',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, DecimalPipe],
   templateUrl: './agendamento.html',
   styleUrl: './agendamento.scss',
 })
@@ -43,19 +44,24 @@ export class Agendamento implements OnInit {
   ngOnInit(): void {
     const estacaoIdParam = this.route.snapshot.queryParamMap.get('estacaoId');
     const estacaoId = Number(estacaoIdParam);
+    console.log('ID da Estação recebido:', estacaoId);
 
     if (!estacaoIdParam || !Number.isInteger(estacaoId) || estacaoId <= 0) {
       this.semEstacaoSelecionada = true;
+      console.log('Estação não selecionada ou ID inválido.');
       return;
     }
 
+    console.log('Iniciando busca da estação...');
     this.estacaoService.buscarEstacao(estacaoId).subscribe({
       next: (response) => {
+        console.log('Dados da estação recebidos:', response.data);
         this.selectedEstacao = response.data;
         this.atualizarHorariosOcupados();
         this.changeDetectorRef.markForCheck();
       },
-      error: () => {
+      error: (err) => {
+        console.error('Erro ao carregar estação:', err);
         this.erro = 'Não foi possível carregar a estação selecionada.';
         this.changeDetectorRef.markForCheck();
       },
@@ -64,7 +70,9 @@ export class Agendamento implements OnInit {
   }
 
   get valorTotal(): number {
-    return (this.selectedEstacao?.preco_por_hora ?? 0) * this.duracaoEstimada;
+    console.log('Calculando total com:', this.selectedEstacao);
+    const preco = this.selectedEstacao?.preco ?? this.selectedEstacao?.preco_por_hora ?? 0;
+    return preco * this.duracaoEstimada;
   }
 
   get periodoFormatado(): string {

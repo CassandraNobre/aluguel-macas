@@ -61,12 +61,6 @@
     </form>
 
     @if (modo === 'login') {
-      <div class="divider"><span>ou</span></div>
-      <div #googleButton class="google-button-container"></div>
-      <button type="button" class="google-button" (click)="entrarComGoogle()">
-        <span class="google-icon">G</span>
-        Continuar com Google
-      </button>
       <p class="mode-switch">Ainda não tem acesso? <button type="button" (click)="alternarModo()">Criar cadastro</button></p>
     } @else {
       <p class="mode-switch">Já possui acesso? <button type="button" (click)="alternarModo()">Entrar na conta</button></p>

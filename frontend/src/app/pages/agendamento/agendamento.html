@@ -104,12 +104,12 @@
 
         <div class="summary-item">
           <span>Valor por hora</span>
-          <strong>R$ {{ selectedEstacao?.preco_por_hora ?? 0 }},00</strong>
+          <strong>R$ {{ (selectedEstacao?.preco ?? selectedEstacao?.preco_por_hora ?? 0) | number:'1.2-2' }}</strong>
         </div>
 
         <div class="summary-item total-row">
           <span>Total</span>
-          <strong>R$ {{ valorTotal.toFixed(2).replace('.', ',') }}</strong>
+          <strong>R$ {{ valorTotal | number:'1.2-2' }}</strong>
         </div>
       </aside>
     </div>

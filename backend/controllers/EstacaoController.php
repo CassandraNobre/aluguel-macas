@@ -42,16 +42,21 @@ class EstacaoController {
      * Get all workstations
      */
     private static function getAll() {
-        $query = 'SELECT id, nome, categoria, descricao, preco_por_hora, imagem_url, recursos, ativa, created_at 
+        $query = 'SELECT id, nome, categoria, descricao, preco, imagem_url, recursos, ativa, created_at 
                   FROM estacoes 
                   WHERE ativa = 1 
                   ORDER BY nome ASC';
         
         $estacoes = Database::fetchAll($query);
         
-        // Parse JSON fields
+        // Parse JSON fields e garantir o nome da chave
         foreach ($estacoes as &$estacao) {
             $estacao['recursos'] = json_decode($estacao['recursos'], true) ?? [];
+            // Garantir que preco exista
+            if (isset($estacao['preco_por_hora']) && !isset($estacao['preco'])) {
+                $estacao['preco'] = $estacao['preco_por_hora'];
+                unset($estacao['preco_por_hora']);
+            }
         }
 
         ResponseHandler::success($estacoes, 200);
@@ -67,7 +72,7 @@ class EstacaoController {
             ResponseHandler::notFound();
         }
 
-        $query = 'SELECT id, nome, categoria, descricao, preco_por_hora, imagem_url, recursos, ativa, created_at, updated_at 
+        $query = 'SELECT id, nome, categoria, descricao, preco, imagem_url, recursos, ativa, created_at, updated_at 
                   FROM estacoes 
                   WHERE id = :id AND ativa = 1';
         
@@ -78,6 +83,12 @@ class EstacaoController {
         }
 
         $estacao['recursos'] = json_decode($estacao['recursos'], true) ?? [];
+        
+        // Garantir que preco exista
+        if (isset($estacao['preco_por_hora']) && !isset($estacao['preco'])) {
+            $estacao['preco'] = $estacao['preco_por_hora'];
+            unset($estacao['preco_por_hora']);
+        }
         
         ResponseHandler::success($estacao, 200);
     }

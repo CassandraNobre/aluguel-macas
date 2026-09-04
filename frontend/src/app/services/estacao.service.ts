@@ -10,6 +10,7 @@ export interface Estacao {
   descricao: string;
   status?: string;
   ativo?: boolean;
+  preco?: number;
   preco_por_hora?: number;
   imagem_url?: string;
   recursos?: string[] | string;

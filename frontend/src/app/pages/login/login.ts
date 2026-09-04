@@ -1,10 +1,7 @@
-import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
+import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { GOOGLE_CLIENT_ID } from '../../services/google-auth.config';
-
-declare const google: any;
 
 @Component({
   selector: 'app-login',
@@ -12,9 +9,7 @@ declare const google: any;
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })
-export class Login implements AfterViewInit {
-  @ViewChild('googleButton') googleButton?: ElementRef<HTMLDivElement>;
-
+export class Login {
   modo: 'login' | 'cadastro' = 'login';
   nome = '';
   email = 'artista@example.com';
@@ -30,45 +25,6 @@ export class Login implements AfterViewInit {
     private route: ActivatedRoute,
     private router: Router,
   ) {}
-
-  ngAfterViewInit(): void {
-    this.inicializarGoogle();
-  }
-
-  private inicializarGoogle(): void {
-    if (typeof google === 'undefined' || !this.googleButton || GOOGLE_CLIENT_ID.startsWith('SUBSTITUA')) {
-      return;
-    }
-
-    google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: (response: { credential: string }) => this.aoReceberCredencialGoogle(response.credential),
-    });
-    google.accounts.id.renderButton(this.googleButton.nativeElement, {
-      theme: 'filled_black',
-      size: 'large',
-      width: 320,
-      text: 'continue_with',
-    });
-  }
-
-  private aoReceberCredencialGoogle(credential: string): void {
-    this.erro = '';
-    this.sucesso = '';
-    this.carregando = true;
-
-    this.authService.entrarComGoogle(credential).subscribe({
-      next: () => {
-        this.sucesso = 'Login com Google realizado com sucesso!';
-        this.carregando = false;
-        setTimeout(() => this.irParaDestino(), 800);
-      },
-      error: (error) => {
-        this.carregando = false;
-        this.erro = error.error?.message ?? 'Não foi possível entrar com o Google.';
-      },
-    });
-  }
 
   entrar(): void {
     this.erro = '';
@@ -93,19 +49,6 @@ export class Login implements AfterViewInit {
         console.error('Erro de login:', error);
       },
     });
-  }
-
-  entrarComGoogle(): void {
-    this.erro = '';
-
-    if (GOOGLE_CLIENT_ID.startsWith('SUBSTITUA')) {
-      this.erro = 'Login com Google ainda não foi configurado (falta o Client ID).';
-      return;
-    }
-
-    if (typeof google !== 'undefined') {
-      google.accounts.id.prompt();
-    }
   }
 
   alternarModo(): void {
