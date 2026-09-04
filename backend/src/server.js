@@ -375,6 +375,20 @@ api.get('/estacoes/:id/horarios', async (req, res) => {
     }
 });
 
+api.get('/contas-recebimento', async (req, res) => {
+    try {
+        const [rows] = await db.execute(
+            `SELECT titular, tipo_chave_pix, chave_pix, banco, agencia, conta
+             FROM contas_recebimento WHERE ativo = 1 ORDER BY id LIMIT 1`
+        );
+        return resposta(res, 200, 'Conta de recebimento carregada', rows[0] ?? null);
+    } catch (error) {
+        if (error.code === 'ER_NO_SUCH_TABLE') return resposta(res, 200, 'Conta de recebimento não configurada', null);
+        console.error(error);
+        return resposta(res, 500, 'Erro interno do servidor');
+    }
+});
+
 api.get('/reservas', autenticado, async (req, res) => {
     const selectComNovasColunas = `SELECT r.id, r.usuario_id, r.nome_cliente, r.estacao_id, r.entrada_data AS data,
                     r.entrada_hora AS horario_inicio, r.saida_hora AS horario_fim,

@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Estacao, EstacaoService, HorarioOcupado } from '../../services/estacao.service';
 import { ReservasService } from '../../services/reservas.service';
+import { ContaRecebimento, PagamentoService } from '../../services/pagamento.service';
 
 @Component({
   selector: 'app-agendamento',
@@ -26,12 +27,15 @@ export class Agendamento implements OnInit {
   erro = '';
   horariosOcupados: HorarioOcupado[] = [];
   carregandoHorarios = false;
+  contaRecebimento: ContaRecebimento | null = null;
+  aguardandoPagamento = false;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private estacaoService: EstacaoService,
     private reservasService: ReservasService,
+    private pagamentoService: PagamentoService,
     private changeDetectorRef: ChangeDetectorRef,
   ) {}
 
@@ -154,7 +158,11 @@ export class Agendamento implements OnInit {
     ).subscribe({
       next: () => {
         this.reservasService.carregarReservas();
-        this.router.navigate(['/minhas-reservas']);
+        if (this.formaPagamento === 'PIX') {
+          this.mostrarInstrucoesPagamento();
+        } else {
+          this.router.navigate(['/minhas-reservas']);
+        }
       },
       error: (error) => {
         this.erro = error.status === 409
@@ -164,6 +172,24 @@ export class Agendamento implements OnInit {
         this.changeDetectorRef.markForCheck();
       },
     });
+  }
+
+  private mostrarInstrucoesPagamento(): void {
+    this.aguardandoPagamento = true;
+    this.pagamentoService.buscarContaRecebimento().subscribe({
+      next: (response) => {
+        this.contaRecebimento = response.data ?? null;
+        this.changeDetectorRef.markForCheck();
+      },
+      error: () => {
+        this.contaRecebimento = null;
+        this.changeDetectorRef.markForCheck();
+      },
+    });
+  }
+
+  concluirPagamento(): void {
+    this.router.navigate(['/minhas-reservas']);
   }
 
   private converterHora(hora: string): number | null {

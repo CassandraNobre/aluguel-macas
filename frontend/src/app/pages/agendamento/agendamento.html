@@ -5,6 +5,7 @@
       <h1>Agendar estação de trabalho</h1>
     </header>
 
+    @if (!aguardandoPagamento) {
     <div class="booking-layout">
       <form class="booking-form" (ngSubmit)="confirmar()">
         <div class="field-row">
@@ -107,5 +108,23 @@
         </div>
       </aside>
     </div>
+    } @else {
+      <div class="payment-panel">
+        <h2>Reserva confirmada! Falta só o pagamento</h2>
+        <p>Total a pagar: <strong>R$ {{ valorTotal.toFixed(2).replace('.', ',') }}</strong></p>
+
+        @if (contaRecebimento) {
+          <div class="pix-card">
+            <p><strong>Titular:</strong> {{ contaRecebimento.titular }}</p>
+            <p><strong>Chave Pix ({{ contaRecebimento.tipo_chave_pix }}):</strong> {{ contaRecebimento.chave_pix }}</p>
+            <p class="pix-hint">Faça o Pix e leve o comprovante no dia da sessão. O status muda para "pago" após a confirmação do estúdio.</p>
+          </div>
+        } @else {
+          <p class="pix-hint">O estúdio ainda não cadastrou a chave Pix. Combine a forma de pagamento diretamente com o InkStation.</p>
+        }
+
+        <button type="button" class="confirm-button" (click)="concluirPagamento()">Ver minhas reservas</button>
+      </div>
+    }
   </div>
 </section>
