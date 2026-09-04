@@ -5,7 +5,12 @@
       <h1>Agendar estação de trabalho</h1>
     </header>
 
-    @if (!aguardandoPagamento) {
+    @if (semEstacaoSelecionada) {
+      <div class="no-estacao-panel">
+        <p>Escolha uma estação no catálogo antes de agendar uma sessão.</p>
+        <a routerLink="/catalogo" class="confirm-button">Ver estações</a>
+      </div>
+    } @else if (!aguardandoPagamento) {
     <div class="booking-layout">
       <form class="booking-form" (ngSubmit)="confirmar()">
         <div class="field-row">

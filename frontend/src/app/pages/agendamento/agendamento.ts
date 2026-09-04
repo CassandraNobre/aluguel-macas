@@ -1,13 +1,13 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Estacao, EstacaoService, HorarioOcupado } from '../../services/estacao.service';
 import { ReservasService } from '../../services/reservas.service';
 import { ContaRecebimento, PagamentoService } from '../../services/pagamento.service';
 
 @Component({
   selector: 'app-agendamento',
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   templateUrl: './agendamento.html',
   styleUrl: './agendamento.scss',
 })
@@ -29,6 +29,7 @@ export class Agendamento implements OnInit {
   carregandoHorarios = false;
   contaRecebimento: ContaRecebimento | null = null;
   aguardandoPagamento = false;
+  semEstacaoSelecionada = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -40,7 +41,14 @@ export class Agendamento implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const estacaoId = Number(this.route.snapshot.queryParamMap.get('estacaoId') ?? '1');
+    const estacaoIdParam = this.route.snapshot.queryParamMap.get('estacaoId');
+    const estacaoId = Number(estacaoIdParam);
+
+    if (!estacaoIdParam || !Number.isInteger(estacaoId) || estacaoId <= 0) {
+      this.semEstacaoSelecionada = true;
+      return;
+    }
+
     this.estacaoService.buscarEstacao(estacaoId).subscribe({
       next: (response) => {
         this.selectedEstacao = response.data;
@@ -101,7 +109,7 @@ export class Agendamento implements OnInit {
   }
 
   atualizarHorariosOcupados(): void {
-    const estacaoId = this.selectedEstacao?.id ?? Number(this.route.snapshot.queryParamMap.get('estacaoId') ?? '1');
+    const estacaoId = this.selectedEstacao?.id ?? Number(this.route.snapshot.queryParamMap.get('estacaoId') ?? '0');
     this.horarioSelecionado = null;
 
     if (!estacaoId || !this.dataSessao) {
