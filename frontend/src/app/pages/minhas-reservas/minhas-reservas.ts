@@ -88,5 +88,14 @@ export class MinhasReservas implements OnInit {
 
     return `R$ ${numero.toFixed(2).replace('.', ',')}`;
   }
+
+  formaPagamento(reserva: Reserva): string {
+    return {
+      PIX: 'Pix',
+      CARTAO_CREDITO: 'Cartão de crédito',
+      CARTAO_DEBITO: 'Cartão de débito',
+      DINHEIRO: 'Dinheiro',
+    }[reserva.forma_pagamento ?? 'PIX'] ?? 'Pix';
+  }
 }
 

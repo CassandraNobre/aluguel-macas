@@ -6,6 +6,7 @@ import { API_URL } from './api.config';
 export interface Reserva {
   id: number;
   usuario_id: number;
+  nome_cliente?: string;
   estacao_id: number;
   estacao: string;
   data: string;
@@ -16,6 +17,7 @@ export interface Reserva {
   valor_total?: number;
   valor?: string;
   observacoes?: string;
+  forma_pagamento?: string;
   status: string;
 }
 
@@ -42,8 +44,8 @@ export class ReservasService {
     });
   }
 
-  adicionarReserva(estacao_id: number, data: string, horario_inicio: string, horario_fim: string, observacoes = ''): Observable<unknown> {
-    return this.http.post(`${this.apiUrl}/reservas`, { estacao_id, data, horario_inicio, horario_fim, observacoes });
+  adicionarReserva(estacao_id: number, data: string, horario_inicio: string, horario_fim: string, observacoes = '', nome_cliente = '', forma_pagamento = 'PIX'): Observable<unknown> {
+    return this.http.post(`${this.apiUrl}/reservas`, { estacao_id, data, horario_inicio, horario_fim, observacoes, nome_cliente, forma_pagamento });
   }
 
   cancelarReserva(id: number): Observable<unknown> {

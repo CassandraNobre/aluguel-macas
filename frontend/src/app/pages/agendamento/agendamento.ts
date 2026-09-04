@@ -19,6 +19,9 @@ export class Agendamento implements OnInit {
   duracaoEstimada = 4;
   horarioSelecionado: { inicio: string; fim: string } | null = null;
   observacoes = '';
+  nome = '';
+  sobrenome = '';
+  formaPagamento: 'PIX' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' | 'DINHEIRO' = 'PIX';
   biosseguranca = true;
   erro = '';
   horariosOcupados: HorarioOcupado[] = [];
@@ -120,6 +123,11 @@ export class Agendamento implements OnInit {
   confirmar(): void {
     this.erro = '';
 
+    if (!this.nome.trim() || !this.sobrenome.trim()) {
+      this.erro = 'Informe seu nome e sobrenome para a reserva.';
+      return;
+    }
+
     if (!this.dataSessao || this.dataSessao < this.dataMinima) {
       this.erro = 'Escolha uma data válida para a sessão.';
       return;
@@ -141,6 +149,8 @@ export class Agendamento implements OnInit {
       this.horarioSelecionado.inicio,
       this.horarioSelecionado.fim,
       this.observacoes,
+      `${this.nome.trim()} ${this.sobrenome.trim()}`,
+      this.formaPagamento,
     ).subscribe({
       next: () => {
         this.reservasService.carregarReservas();

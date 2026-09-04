@@ -376,9 +376,18 @@ api.get('/estacoes/:id/horarios', async (req, res) => {
 });
 
 api.get('/reservas', autenticado, async (req, res) => {
-    try {
-        const [rows] = await db.execute(
-                `SELECT r.id, r.usuario_id, r.estacao_id, r.entrada_data AS data,
+    const selectComNovasColunas = `SELECT r.id, r.usuario_id, r.nome_cliente, r.estacao_id, r.entrada_data AS data,
+                    r.entrada_hora AS horario_inicio, r.saida_hora AS horario_fim,
+                    ROUND(TIMESTAMPDIFF(MINUTE, CONCAT(r.entrada_data, ' ', r.entrada_hora),
+                        CONCAT(r.saida_data, ' ', r.saida_hora)) / 60, 2) AS duracao,
+                    ROUND(TIMESTAMPDIFF(MINUTE, CONCAT(r.entrada_data, ' ', r.entrada_hora),
+                        CONCAT(r.saida_data, ' ', r.saida_hora)) / 60 * e.preco, 2) AS valor_total,
+                    r.status, r.observacoes, r.forma_pagamento, r.criado_em AS created_at,
+                    r.atualizado_em AS updated_at,
+                    e.nome AS estacao_nome
+             FROM reservas r JOIN estacoes e ON e.id = r.estacao_id
+             WHERE r.usuario_id = ? ORDER BY r.entrada_data DESC, r.entrada_hora DESC`;
+    const selectSemNovasColunas = `SELECT r.id, r.usuario_id, r.estacao_id, r.entrada_data AS data,
                     r.entrada_hora AS horario_inicio, r.saida_hora AS horario_fim,
                     ROUND(TIMESTAMPDIFF(MINUTE, CONCAT(r.entrada_data, ' ', r.entrada_hora),
                         CONCAT(r.saida_data, ' ', r.saida_hora)) / 60, 2) AS duracao,
@@ -388,9 +397,15 @@ api.get('/reservas', autenticado, async (req, res) => {
                     r.atualizado_em AS updated_at,
                     e.nome AS estacao_nome
              FROM reservas r JOIN estacoes e ON e.id = r.estacao_id
-             WHERE r.usuario_id = ? ORDER BY r.entrada_data DESC, r.entrada_hora DESC`,
-            [req.usuario.id]
-        );
+             WHERE r.usuario_id = ? ORDER BY r.entrada_data DESC, r.entrada_hora DESC`;
+    try {
+        let rows;
+        try {
+            [rows] = await db.execute(selectComNovasColunas, [req.usuario.id]);
+        } catch (columnError) {
+            if (columnError.code !== 'ER_BAD_FIELD_ERROR') throw columnError;
+            [rows] = await db.execute(selectSemNovasColunas, [req.usuario.id]);
+        }
         return resposta(res, 200, 'Reservas carregadas', rows);
     } catch (error) {
         console.error(error);
@@ -398,15 +413,23 @@ api.get('/reservas', autenticado, async (req, res) => {
     }
 });
 
+
+const FORMAS_PAGAMENTO = ['PIX', 'CARTAO_CREDITO', 'CARTAO_DEBITO', 'DINHEIRO'];
+
 api.post('/reservas', autenticado, async (req, res) => {
-    const { estacao_id, data, horario_inicio, horario_fim, observacoes = '' } = req.body;
+    const { estacao_id, data, horario_inicio, horario_fim, observacoes = '', nome_cliente = '', forma_pagamento = 'PIX' } = req.body;
     const estacaoId = Number(estacao_id);
     const horarioInicio = horarioNormalizado(horario_inicio);
     const horarioFim = horarioNormalizado(horario_fim);
     const inicio = minutosDoHorario(horarioInicio);
     const fim = minutosDoHorario(horarioFim);
+    const nomeCliente = String(nome_cliente).trim();
+    const formaPagamento = FORMAS_PAGAMENTO.includes(String(forma_pagamento).toUpperCase()) ? String(forma_pagamento).toUpperCase() : 'PIX';
     if (!Number.isInteger(estacaoId) || estacaoId <= 0 || !dataValida(data) || !Number.isFinite(inicio) || !Number.isFinite(fim) || inicio >= fim) {
         return resposta(res, 400, 'Estação, data e horários válidos são obrigatórios');
+    }
+    if (!nomeCliente || nomeCliente.split(/\s+/).length < 2) {
+        return resposta(res, 400, 'Informe nome e sobrenome do cliente');
     }
 
     let connection;
@@ -432,14 +455,37 @@ api.post('/reservas', autenticado, async (req, res) => {
         }
         const duration = (fim - inicio) / 60;
         const total = Number((duration * Number(stations[0].preco)).toFixed(2));
-        const [result] = await connection.execute(
-            `INSERT INTO reservas
-                (usuario_id, estacao_id, entrada_data, entrada_hora, saida_data, saida_hora, observacoes, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'CONFIRMADA')`,
-            [req.usuario.id, estacaoId, data, horarioInicio, data, horarioFim, observacoes]
-        );
+        let result;
+        try {
+            [result] = await connection.execute(
+                `INSERT INTO reservas
+                    (usuario_id, nome_cliente, estacao_id, entrada_data, entrada_hora, saida_data, saida_hora, observacoes, forma_pagamento, status)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'CONFIRMADA')`,
+                [req.usuario.id, nomeCliente, estacaoId, data, horarioInicio, data, horarioFim, observacoes, formaPagamento]
+            );
+        } catch (columnError) {
+            if (columnError.code !== 'ER_BAD_FIELD_ERROR') throw columnError;
+            // Colunas novas ainda não existem (migração pendente); cria a reserva sem elas
+            console.warn('Colunas nome_cliente/forma_pagamento ausentes (rode backend/database/migracao-pagamentos.sql):', columnError.message);
+            [result] = await connection.execute(
+                `INSERT INTO reservas
+                    (usuario_id, estacao_id, entrada_data, entrada_hora, saida_data, saida_hora, observacoes, status)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 'CONFIRMADA')`,
+                [req.usuario.id, estacaoId, data, horarioInicio, data, horarioFim, observacoes]
+            );
+        }
+        const reservaId = result.insertId;
+        try {
+            await connection.execute(
+                `INSERT INTO pagamentos (reserva_id, forma_pagamento, valor, status) VALUES (?, ?, ?, 'PENDENTE')`,
+                [reservaId, formaPagamento, total]
+            );
+        } catch (paymentError) {
+            // Tabela "pagamentos" pode ainda não existir (migração pendente); não impede a reserva
+            console.warn('Não foi possível registrar o pagamento (rode a migração backend/database/migracao-pagamentos.sql):', paymentError.message);
+        }
         await connection.commit();
-        return resposta(res, 201, 'Reserva criada com sucesso', { id: result.insertId, estacao_id: estacaoId, data, horario_inicio: horarioInicio, horario_fim: horarioFim, duracao: duration, valor_total: total, status: 'confirmada' });
+        return resposta(res, 201, 'Reserva criada com sucesso', { id: reservaId, nome_cliente: nomeCliente, estacao_id: estacaoId, data, horario_inicio: horarioInicio, horario_fim: horarioFim, duracao: duration, valor_total: total, forma_pagamento: formaPagamento, status: 'confirmada' });
     } catch (error) {
         if (connection) await connection.rollback();
         if (error.code === 'ER_DUP_ENTRY') return resposta(res, 409, 'Horário já está reservado');

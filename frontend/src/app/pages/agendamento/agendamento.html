@@ -7,6 +7,18 @@
 
     <div class="booking-layout">
       <form class="booking-form" (ngSubmit)="confirmar()">
+        <div class="field-row">
+          <label class="field-group">
+            <span>Nome</span>
+            <input type="text" name="nome" [(ngModel)]="nome" placeholder="Seu nome" required />
+          </label>
+
+          <label class="field-group">
+            <span>Sobrenome</span>
+            <input type="text" name="sobrenome" [(ngModel)]="sobrenome" placeholder="Seu sobrenome" required />
+          </label>
+        </div>
+
         <label class="field-group">
           <span>Data da sessão</span>
           <input type="date" name="dataSessao" [(ngModel)]="dataSessao" [min]="dataMinima" (ngModelChange)="atualizarHorariosOcupados()" required />
@@ -19,6 +31,16 @@
             <option [ngValue]="4">4 horas</option>
             <option [ngValue]="6">6 horas</option>
             <option [ngValue]="8">Diária (8 horas)</option>
+          </select>
+        </label>
+
+        <label class="field-group">
+          <span>Forma de pagamento</span>
+          <select name="formaPagamento" [(ngModel)]="formaPagamento">
+            <option value="PIX">Pix</option>
+            <option value="CARTAO_CREDITO">Cartão de crédito</option>
+            <option value="CARTAO_DEBITO">Cartão de débito</option>
+            <option value="DINHEIRO">Dinheiro</option>
           </select>
         </label>
 

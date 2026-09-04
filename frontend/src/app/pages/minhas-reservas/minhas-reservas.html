@@ -11,10 +11,12 @@
     <table>
       <thead>
         <tr>
+          <th>Cliente</th>
           <th>Estação</th>
           <th>Data</th>
           <th>Período</th>
           <th>Valor</th>
+          <th>Pagamento</th>
           <th>Status</th>
           <th>Ações</th>
         </tr>
@@ -22,10 +24,12 @@
       <tbody>
         @for (reserva of reservas$ | async; track reserva.id) {
           <tr>
+            <td>{{ reserva.nome_cliente || '—' }}</td>
             <td>{{ nomeEstacao(reserva) }}</td>
             <td>{{ reserva.data }}</td>
             <td>{{ reserva.horario_inicio }} - {{ reserva.horario_fim }}</td>
             <td>{{ valor(reserva) }}</td>
+            <td>{{ formaPagamento(reserva) }}</td>
             <td><span class="status {{ classeStatus(reserva.status) }}">{{ reserva.status }}</span></td>
             <td>
               @if (podeCancelar(reserva)) {
@@ -36,7 +40,7 @@
           </tr>
         } @empty {
           <tr>
-            <td colspan="6" class="no-reservas">Nenhuma reserva encontrada.</td>
+            <td colspan="8" class="no-reservas">Nenhuma reserva encontrada.</td>
           </tr>
         }
       </tbody>

@@ -171,7 +171,7 @@ function createFallbackDatabase() {
             }))];
         }
 
-        if (normalizedSql.includes('SELECT r.id, r.usuario_id, r.estacao_id, r.entrada_data AS data')) {
+        if (normalizedSql.includes('r.entrada_data AS data')) {
             const userId = Number(args[0]);
             const rows = store.reservas
                 .filter((reserva) => reserva.usuario_id === userId)
@@ -181,6 +181,7 @@ function createFallbackDatabase() {
                     return {
                         id: reserva.id,
                         usuario_id: reserva.usuario_id,
+                        nome_cliente: reserva.nome_cliente || '',
                         estacao_id: reserva.estacao_id,
                         data: reserva.entrada_data,
                         horario_inicio: reserva.entrada_hora,
@@ -189,6 +190,7 @@ function createFallbackDatabase() {
                         valor_total: Number((duracao * Number(estacao?.preco || 0)).toFixed(2)),
                         status: reserva.status,
                         observacoes: reserva.observacoes,
+                        forma_pagamento: reserva.forma_pagamento || 'PIX',
                         created_at: reserva.criado_em,
                         updated_at: reserva.atualizado_em,
                         estacao_nome: estacao?.nome || `Estação ${reserva.estacao_id}`,
@@ -231,23 +233,33 @@ function createFallbackDatabase() {
         }
 
         if (normalizedSql.includes('INSERT INTO reservas')) {
-            const [usuarioId, estacaoId, entradaData, entradaHora, saidaData, saidaHora, observacoes, status] = args;
+            const comNomeCliente = normalizedSql.includes('nome_cliente');
+            const [usuarioId, nomeCliente, estacaoId, entradaData, entradaHora, saidaData, saidaHora, observacoes, formaPagamento] = comNomeCliente
+                ? args
+                : [args[0], '', args[1], args[2], args[3], args[4], args[5], args[6], 'PIX'];
+            const status = comNomeCliente ? undefined : args[7];
             const reservationId = ++store.counters.reservas;
             const reserva = {
                 id: reservationId,
                 usuario_id: Number(usuarioId),
+                nome_cliente: nomeCliente || '',
                 estacao_id: Number(estacaoId),
                 entrada_data: entradaData,
                 entrada_hora: entradaHora,
                 saida_data: saidaData,
                 saida_hora: saidaHora,
                 observacoes: observacoes || '',
+                forma_pagamento: formaPagamento || 'PIX',
                 status: status || 'CONFIRMADA',
                 criado_em: new Date().toISOString(),
                 atualizado_em: new Date().toISOString(),
             };
             store.reservas.push(reserva);
             return [{ insertId: reservationId, affectedRows: 1 }];
+        }
+
+        if (normalizedSql.includes('INSERT INTO pagamentos')) {
+            return [{ insertId: ++store.counters.reservas, affectedRows: 1 }];
         }
 
         if (normalizedSql.includes('SELECT id FROM reservas WHERE estacao_id = ? AND entrada_data = ?')) {
