@@ -25,7 +25,31 @@ export class MinhasReservas implements OnInit {
 
   podeCancelar(reserva: Reserva): boolean {
     const status = reserva.status.toLowerCase();
-    return status === 'confirmada' || status === 'pendente';
+    return (status === 'confirmada' || status === 'pendente') && !this.estaPaga(reserva);
+  }
+
+  estaPaga(reserva: Reserva): boolean {
+    return reserva.pagamento_status === 'PAGO';
+  }
+
+  podeMarcarPago(reserva: Reserva): boolean {
+    return reserva.pagamento_status === 'PENDENTE';
+  }
+
+  marcarPago(reserva: Reserva): void {
+    const confirmar = window.confirm(`Confirmar que a reserva da ${this.nomeEstacao(reserva)} já foi paga?`);
+
+    if (!confirmar) {
+      return;
+    }
+
+    this.reservasService.marcarComoPago(reserva.id).subscribe({
+      next: () => this.reservasService.carregarReservas(),
+      error: (error) => {
+        this.erro = error.error?.message ?? 'Erro ao confirmar pagamento.';
+        this.changeDetectorRef.markForCheck();
+      },
+    });
   }
 
   cancelar(reserva: Reserva): void {
@@ -49,6 +73,10 @@ export class MinhasReservas implements OnInit {
   }
 
   apagar(reserva: Reserva): void {
+    if (this.estaPaga(reserva)) {
+      return;
+    }
+
     const confirmar = window.confirm(`Deseja apagar definitivamente a reserva da ${this.nomeEstacao(reserva)}? Esta ação não pode ser desfeita.`);
 
     if (!confirmar) {

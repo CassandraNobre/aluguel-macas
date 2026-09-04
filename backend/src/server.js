@@ -398,8 +398,10 @@ api.get('/reservas', autenticado, async (req, res) => {
                         CONCAT(r.saida_data, ' ', r.saida_hora)) / 60 * e.preco, 2) AS valor_total,
                     r.status, r.observacoes, r.forma_pagamento, r.criado_em AS created_at,
                     r.atualizado_em AS updated_at,
-                    e.nome AS estacao_nome
+                    e.nome AS estacao_nome,
+                    p.status AS pagamento_status
              FROM reservas r JOIN estacoes e ON e.id = r.estacao_id
+             LEFT JOIN pagamentos p ON p.reserva_id = r.id
              WHERE r.usuario_id = ? ORDER BY r.entrada_data DESC, r.entrada_hora DESC`;
     const selectSemNovasColunas = `SELECT r.id, r.usuario_id, r.estacao_id, r.entrada_data AS data,
                     r.entrada_hora AS horario_inicio, r.saida_hora AS horario_fim,
@@ -524,8 +526,41 @@ api.patch('/reservas/:id/cancelar', autenticado, async (req, res) => {
     }
 });
 
+api.patch('/reservas/:id/pagar', autenticado, async (req, res) => {
+    try {
+        const [reservas] = await db.execute(
+            'SELECT id FROM reservas WHERE id = ? AND usuario_id = ?', [req.params.id, req.usuario.id]
+        );
+        if (!reservas.length) return resposta(res, 404, 'Reserva não encontrada');
+
+        const [result] = await db.execute(
+            `UPDATE pagamentos SET status = 'PAGO', pago_em = NOW() WHERE reserva_id = ?`,
+            [req.params.id]
+        );
+        if (!result.affectedRows) {
+            return resposta(res, 404, 'Nenhum pagamento pendente encontrado para esta reserva');
+        }
+        return resposta(res, 200, 'Pagamento confirmado com sucesso', { id: Number(req.params.id), pagamento_status: 'PAGO' });
+    } catch (error) {
+        if (error.code === 'ER_NO_SUCH_TABLE') return resposta(res, 400, 'Rode a migração backend/database/migracao-pagamentos.sql antes de confirmar pagamentos');
+        console.error(error);
+        return resposta(res, 500, 'Erro interno do servidor');
+    }
+});
+
 api.delete('/reservas/:id', autenticado, async (req, res) => {
     try {
+        const [pagamentos] = await db.execute(
+            `SELECT status FROM pagamentos WHERE reserva_id = ? AND status = 'PAGO'`,
+            [req.params.id]
+        ).catch((error) => {
+            if (error.code === 'ER_NO_SUCH_TABLE') return [[]];
+            throw error;
+        });
+        if (pagamentos.length) {
+            return resposta(res, 409, 'Esta reserva já foi paga e não pode ser apagada');
+        }
+
         const [result] = await db.execute(
             `DELETE FROM reservas WHERE id = ? AND usuario_id = ?`,
             [req.params.id, req.usuario.id]

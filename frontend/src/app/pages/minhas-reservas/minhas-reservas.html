@@ -29,13 +29,23 @@
             <td>{{ reserva.data }}</td>
             <td>{{ reserva.horario_inicio }} - {{ reserva.horario_fim }}</td>
             <td>{{ valor(reserva) }}</td>
-            <td>{{ formaPagamento(reserva) }}</td>
+            <td>
+              {{ formaPagamento(reserva) }}
+              @if (estaPaga(reserva)) {
+                <span class="status confirmed">Pago</span>
+              }
+            </td>
             <td><span class="status {{ classeStatus(reserva.status) }}">{{ reserva.status }}</span></td>
             <td>
               @if (podeCancelar(reserva)) {
                 <button type="button" class="cancel-button" (click)="cancelar(reserva)">Cancelar</button>
               }
-              <button type="button" class="delete-button" (click)="apagar(reserva)">Apagar</button>
+              @if (podeMarcarPago(reserva)) {
+                <button type="button" class="cancel-button" (click)="marcarPago(reserva)">Marcar como pago</button>
+              }
+              @if (!estaPaga(reserva)) {
+                <button type="button" class="delete-button" (click)="apagar(reserva)">Apagar</button>
+              }
             </td>
           </tr>
         } @empty {

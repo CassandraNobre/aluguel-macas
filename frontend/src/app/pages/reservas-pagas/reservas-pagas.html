@@ -1,0 +1,39 @@
+<section class="reservas-page">
+  <header class="reservas-header">
+    <div>
+      <p class="eyebrow">Minha conta</p>
+      <h1>Reservas pagas</h1>
+    </div>
+  </header>
+
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Estação</th>
+          <th>Data</th>
+          <th>Período</th>
+          <th>Valor</th>
+          <th>Pagamento</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (reserva of reservasPagas$ | async; track reserva.id) {
+          <tr>
+            <td>{{ reserva.nome_cliente || '—' }}</td>
+            <td>{{ nomeEstacao(reserva) }}</td>
+            <td>{{ reserva.data }}</td>
+            <td>{{ reserva.horario_inicio }} - {{ reserva.horario_fim }}</td>
+            <td>{{ valor(reserva) }}</td>
+            <td>{{ formaPagamento(reserva) }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="no-reservas">Nenhuma reserva paga ainda.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

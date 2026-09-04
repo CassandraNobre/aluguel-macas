@@ -18,6 +18,7 @@ export interface Reserva {
   valor?: string;
   observacoes?: string;
   forma_pagamento?: string;
+  pagamento_status?: string | null;
   status: string;
 }
 
@@ -50,6 +51,10 @@ export class ReservasService {
 
   cancelarReserva(id: number): Observable<unknown> {
     return this.http.patch(`${this.apiUrl}/reservas/${id}/cancelar`, {});
+  }
+
+  marcarComoPago(id: number): Observable<unknown> {
+    return this.http.patch(`${this.apiUrl}/reservas/${id}/pagar`, {});
   }
 
   apagarReserva(id: number): Observable<unknown> {

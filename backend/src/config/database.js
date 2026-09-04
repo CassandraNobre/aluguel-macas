@@ -88,7 +88,8 @@ function createFallbackDatabase() {
             },
         ],
         authTokens: [],
-        counters: { users: 1, estacoes: 4, reservas: 1, tokens: 0 },
+        pagamentos: [],
+        counters: { users: 1, estacoes: 4, reservas: 1, tokens: 0, pagamentos: 0 },
     };
 
     function clone(value) {
@@ -177,6 +178,7 @@ function createFallbackDatabase() {
                 .filter((reserva) => reserva.usuario_id === userId)
                 .map((reserva) => {
                     const estacao = store.estacoes.find((entry) => entry.id === reserva.estacao_id);
+                    const pagamento = store.pagamentos.find((entry) => entry.reserva_id === reserva.id);
                     const duracao = ((new Date(`1970-01-01T${reserva.saida_hora}`) - new Date(`1970-01-01T${reserva.entrada_hora}`)) / 60000) / 60;
                     return {
                         id: reserva.id,
@@ -191,6 +193,7 @@ function createFallbackDatabase() {
                         status: reserva.status,
                         observacoes: reserva.observacoes,
                         forma_pagamento: reserva.forma_pagamento || 'PIX',
+                        pagamento_status: pagamento?.status || null,
                         created_at: reserva.criado_em,
                         updated_at: reserva.atualizado_em,
                         estacao_nome: estacao?.nome || `Estação ${reserva.estacao_id}`,
@@ -259,7 +262,42 @@ function createFallbackDatabase() {
         }
 
         if (normalizedSql.includes('INSERT INTO pagamentos')) {
-            return [{ insertId: ++store.counters.reservas, affectedRows: 1 }];
+            const [reservaId, formaPagamentoPagto, valor] = args;
+            const id = ++store.counters.pagamentos;
+            store.pagamentos.push({
+                id,
+                reserva_id: Number(reservaId),
+                forma_pagamento: formaPagamentoPagto,
+                valor: Number(valor),
+                status: 'PENDENTE',
+                pago_em: null,
+            });
+            return [{ insertId: id, affectedRows: 1 }];
+        }
+
+        if (normalizedSql.includes("UPDATE pagamentos SET status = 'PAGO'")) {
+            const [reservaId] = args;
+            let affected = 0;
+            store.pagamentos = store.pagamentos.map((pagamento) => {
+                if (pagamento.reserva_id === Number(reservaId)) {
+                    affected += 1;
+                    return { ...pagamento, status: 'PAGO', pago_em: new Date().toISOString() };
+                }
+                return pagamento;
+            });
+            return [{ affectedRows: affected }];
+        }
+
+        if (normalizedSql.includes("SELECT status FROM pagamentos WHERE reserva_id = ? AND status = 'PAGO'")) {
+            const [reservaId] = args;
+            const rows = store.pagamentos.filter((pagamento) => pagamento.reserva_id === Number(reservaId) && pagamento.status === 'PAGO');
+            return [rows];
+        }
+
+        if (normalizedSql.includes('SELECT id FROM reservas WHERE id = ? AND usuario_id = ?')) {
+            const [id, usuarioId] = args;
+            const rows = store.reservas.filter((reserva) => reserva.id === Number(id) && reserva.usuario_id === Number(usuarioId)).map(({ id }) => ({ id }));
+            return [rows];
         }
 
         if (normalizedSql.includes('SELECT id FROM reservas WHERE estacao_id = ? AND entrada_data = ?')) {
