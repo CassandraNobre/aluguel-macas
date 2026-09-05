@@ -370,22 +370,39 @@ function createFallbackDatabase() {
 }
 
 const sslEnabled = /^true$/i.test(process.env.DB_SSL || '');
-const mysqlConfig = {
-    host: process.env.DB_HOST || 'localhost',
-    port: Number(process.env.DB_PORT || 3306),
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASS ?? '',
-    database: process.env.DB_NAME || 'inkstation',
-    waitForConnections: true,
-    connectionLimit: 10,
-    ...(sslEnabled ? { ssl: { rejectUnauthorized: false } } : {}),
-};
+
+let mysqlConfig = {};
+
+if (process.env.DATABASE_URL) {
+    const url = new URL(process.env.DATABASE_URL);
+    mysqlConfig = {
+        host: url.hostname,
+        port: Number(url.port || 3306),
+        user: url.username,
+        password: url.password,
+        database: url.pathname.replace('/', ''),
+        waitForConnections: true,
+        connectionLimit: 10,
+        ...(sslEnabled || url.searchParams.get('ssl-mode') === 'REQUIRED' ? { ssl: { rejectUnauthorized: false } } : {}),
+    };
+} else {
+    mysqlConfig = {
+        host: process.env.DB_HOST || 'localhost',
+        port: Number(process.env.DB_PORT || 3306),
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASS ?? '',
+        database: process.env.DB_NAME || 'inkstation',
+        waitForConnections: true,
+        connectionLimit: 10,
+        ...(sslEnabled ? { ssl: { rejectUnauthorized: false } } : {}),
+    };
+}
 
 const fallbackDb = createFallbackDatabase();
 let pool = null;
 
 function isMysqlConfigured() {
-    return Boolean(process.env.DB_HOST || process.env.DB_USER || process.env.DB_NAME || process.env.DB_PORT);
+    return Boolean(process.env.DATABASE_URL || process.env.DB_HOST || process.env.DB_USER || process.env.DB_NAME || process.env.DB_PORT);
 }
 
 try {
