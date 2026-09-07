@@ -2,17 +2,22 @@ const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
-const isProduction = process.env.NODE_ENV === 'production';
+let pool = null;
 
-// Configuração do Pool do Postgres
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.DB_SSL === 'true' || process.env.DATABASE_URL?.includes('sslmode=require') ? { rejectUnauthorized: false } : false
-});
+if (process.env.DATABASE_URL) {
+    pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: process.env.DB_SSL === 'true' || process.env.DATABASE_URL?.includes('sslmode=require') ? { rejectUnauthorized: false } : false
+    });
+    console.log('Pool do Postgres configurado.');
+} else {
+    console.log('Sem DATABASE_URL. O backend vai falhar ao buscar dados (modo de desenvolvimento sem banco).');
+}
 
 const db = {
     async execute(sql, params = []) {
-        // Adaptar sintaxe MySQL '?' para Postgres '$1', '$2', etc.
+        if (!pool) throw new Error('Banco de dados não configurado.');
+        
         let pgSql = sql;
         let index = 1;
         while (pgSql.includes('?')) {
