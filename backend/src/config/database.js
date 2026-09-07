@@ -69,29 +69,14 @@ function createFallbackDatabase() {
                 atualizado_em: new Date().toISOString(),
             },
         ],
-        reservas: [
-            {
-                id: 1,
-                usuario_id: 1,
-                estacao_id: 1,
-                entrada_data: '2026-08-25',
-                entrada_hora: '09:00:00',
-                saida_data: '2026-08-25',
-                saida_hora: '13:00:00',
-                observacoes: 'Sessão de realismo',
-                status: 'CONFIRMADA',
-                criado_em: new Date().toISOString(),
-                atualizado_em: new Date().toISOString(),
-            },
-        ],
+        reservas: [],
         authTokens: [],
         pagamentos: [],
-        counters: { users: 1, estacoes: 4, reservas: 1, tokens: 0, pagamentos: 0 },
+        counters: { users: 1, estacoes: 4, reservas: 0, tokens: 0, pagamentos: 0 },
     };
 
     async function execute(sql, params = []) {
-        // Mock simples para manter o app rodando localmente
-        if (sql.includes('SELECT')) return store.estacoes;
+        if (sql.includes('SELECT') || sql.includes('FROM estacoes')) return store.estacoes;
         return [];
     }
 
