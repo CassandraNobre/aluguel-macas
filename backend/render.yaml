@@ -3,20 +3,13 @@ services:
     name: inkstation-backend
     runtime: node
     rootDir: backend
-    buildCommand: npm ci
+    buildCommand: npm install
     startCommand: npm start
-    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DB_HOST
-        sync: false
       - key: DB_PORT
-        value: "13995"
-      - key: DB_USER
-        sync: false
-      - key: DB_PASS
-        sync: false
+        value: "25855"
       - key: DB_NAME
         value: inkstation
       - key: DB_SSL
