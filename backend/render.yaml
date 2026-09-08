@@ -6,12 +6,3 @@ services:
     rootDir: backend
     buildCommand: npm install
     startCommand: npm start
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: DB_NAME
-        value: inkstation
-      - key: DB_SSL
-        value: "true"
-      - key: FRONTEND_URL
-        value: https://aluguel-macas.vercel.app
