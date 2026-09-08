@@ -2,14 +2,13 @@ services:
   - type: web
     name: inkstation-backend
     runtime: node
+    plan: free
     rootDir: backend
     buildCommand: npm install
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DB_PORT
-        value: "25855"
       - key: DB_NAME
         value: inkstation
       - key: DB_SSL
