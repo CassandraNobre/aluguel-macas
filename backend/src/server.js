@@ -9,9 +9,9 @@ const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const api = express.Router();
 
-// Configuração do CORS
+// Configuração do CORS - Permitindo qualquer origem para resolver o bloqueio de domínios dinâmicos
 app.use(cors({
-    origin: ['https://aluguel-macas.vercel.app', 'http://localhost:4200'],
+    origin: '*',
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
