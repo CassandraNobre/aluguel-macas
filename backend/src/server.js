@@ -19,10 +19,14 @@ function resposta(res, status, message, data = {}, errors = {}) {
 // ROTA DE REGISTRO
 api.post('/auth/register', async (req, res) => {
     try {
-        const { nome, email, senha } = req.body;
-        if (!nome || !email || !senha) return resposta(res, 400, 'Dados incompletos');
+        const { nome, nome_artistico, email, senha, confirmar_senha } = req.body;
+        const nomeFinal = nome || nome_artistico;
+        
+        if (!nomeFinal || !email || !senha) return resposta(res, 400, 'Dados incompletos');
+        if (senha !== confirmar_senha) return resposta(res, 400, 'As senhas não conferem');
+        
         const hash = await bcrypt.hash(senha, 12);
-        await db.execute('INSERT INTO usuarios (nome, email, senha_hash) VALUES (?, ?, ?)', [nome, email, hash]);
+        await db.execute('INSERT INTO usuarios (nome, email, senha_hash) VALUES (?, ?, ?)', [nomeFinal, email, hash]);
         return resposta(res, 201, 'Usuário cadastrado');
     } catch (error) {
         console.error(error);
