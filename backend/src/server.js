@@ -21,10 +21,8 @@ api.post('/auth/register', async (req, res) => {
     try {
         const { nome, nome_artistico, email, senha, confirmar_senha } = req.body;
         const nomeFinal = nome || nome_artistico;
-        
         if (!nomeFinal || !email || !senha) return resposta(res, 400, 'Dados incompletos');
         if (senha !== confirmar_senha) return resposta(res, 400, 'As senhas não conferem');
-        
         const hash = await bcrypt.hash(senha, 12);
         await db.execute('INSERT INTO usuarios (nome, email, senha_hash) VALUES (?, ?, ?)', [nomeFinal, email, hash]);
         return resposta(res, 201, 'Usuário cadastrado');
@@ -56,6 +54,51 @@ api.get('/estacoes', async (req, res) => {
     } catch (error) {
         console.error(error);
         return resposta(res, 500, 'Erro interno');
+    }
+});
+
+api.get('/estacoes/:id', async (req, res) => {
+    try {
+        const rows = await db.execute(
+            `SELECT id, nome, tipo AS categoria, descricao, preco, imagem AS imagem_url, recursos, ativo AS ativa 
+             FROM estacoes WHERE id = ? AND ativo = true`,
+            [req.params.id]
+        );
+        if (!rows.length) return resposta(res, 404, 'Estação não encontrada');
+        return resposta(res, 200, 'Estação carregada', { ...rows[0], preco_por_hora: Number(rows[0].preco) });
+    } catch (error) {
+        console.error(error);
+        return resposta(res, 500, 'Erro interno');
+    }
+});
+
+api.get('/estacoes/:id/horarios', async (req, res) => {
+    try {
+        const rows = await db.execute(
+            `SELECT entrada_hora AS horario_inicio, saida_hora AS horario_fim
+             FROM reservas
+             WHERE estacao_id = ? AND entrada_data = ? AND status = 'CONFIRMADA'`,
+            [req.params.id, req.query.data]
+        );
+        return resposta(res, 200, 'Horários ocupados carregados', rows);
+    } catch (error) {
+        console.error(error);
+        return resposta(res, 500, 'Erro interno');
+    }
+});
+
+api.post('/reservas', async (req, res) => {
+    try {
+        const { estacao_id, data, horario_inicio, horario_fim } = req.body;
+        await db.execute(
+            `INSERT INTO reservas (estacao_id, entrada_data, entrada_hora, saida_data, saida_hora, status) 
+             VALUES (?, ?, ?, ?, ?, 'CONFIRMADA')`,
+            [estacao_id, data, horario_inicio, data, horario_fim]
+        );
+        return resposta(res, 201, 'Reserva criada');
+    } catch (error) {
+        console.error(error);
+        return resposta(res, 500, 'Erro ao criar reserva');
     }
 });
 
