@@ -17,7 +17,9 @@ export class ReservasPagas implements OnInit {
     private changeDetectorRef: ChangeDetectorRef,
   ) {
     this.reservasPagas$ = this.reservasService.reservas$.pipe(
-      map((reservas) => reservas.filter((reserva) => reserva.pagamento_status === 'PAGO')),
+      map((reservas) =>
+        reservas.filter((reserva) => reserva.status?.toUpperCase() === 'CONCLUIDA')
+      )
     );
   }
 
@@ -26,20 +28,25 @@ export class ReservasPagas implements OnInit {
   }
 
   nomeEstacao(reserva: Reserva): string {
-    return reserva.estacao_nome ?? reserva.estacao ?? `Estação #${reserva.estacao_id}`;
+    return reserva.estacao_nome ?? `Estação #${reserva.estacao_id}`;
   }
 
   valor(reserva: Reserva): string {
     const numero = Number(reserva.valor_total);
-    return Number.isFinite(numero) ? `R$ ${numero.toFixed(2).replace('.', ',')}` : (reserva.valor ?? 'Não informado');
+    return Number.isFinite(numero) && numero > 0
+      ? `R$ ${numero.toFixed(2).replace('.', ',')}`
+      : 'Não informado';
   }
 
   formaPagamento(reserva: Reserva): string {
-    return {
+    const mapaPagamento: Record<string, string> = {
       PIX: 'Pix',
       CARTAO_CREDITO: 'Cartão de crédito',
       CARTAO_DEBITO: 'Cartão de débito',
       DINHEIRO: 'Dinheiro',
-    }[reserva.forma_pagamento ?? 'PIX'] ?? 'Pix';
+    };
+
+    const chave = reserva.forma_pagamento ?? 'PIX';
+    return mapaPagamento[chave] ?? 'Pix';
   }
 }

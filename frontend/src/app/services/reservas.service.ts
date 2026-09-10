@@ -3,23 +3,21 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { API_URL } from './api.config';
 
+// Interface espelhando exatamente as colunas do banco PostgreSQL + aliases do SELECT
 export interface Reserva {
-  id: number;
-  usuario_id: number;
+  id?: number;
+  usuario_id?: number;
   nome_cliente?: string;
   estacao_id: number;
-  estacao: string;
-  data: string;
-  periodo: string;
-  horario_inicio: string;
-  horario_fim: string;
   estacao_nome?: string;
-  valor_total?: number;
-  valor?: string;
+  estacao_preco?: number;
+  data: string;           // Mapeado de entrada_data
+  horario_inicio: string; // Mapeado de entrada_hora
+  horario_fim: string;    // Mapeado de saida_hora
+  status: 'CONFIRMADA' | 'CONCLUIDA' | 'CANCELADA';
+  forma_pagamento?: 'PIX' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' | 'DINHEIRO';
   observacoes?: string;
-  forma_pagamento?: string;
-  pagamento_status?: string | null;
-  status: string;
+  valor_total?: number;
 }
 
 @Injectable({
@@ -35,7 +33,9 @@ export class ReservasService {
   carregarReservas(): void {
     this.http.get<{ data?: Reserva[] } | Reserva[]>(`${this.apiUrl}/reservas`).subscribe({
       next: (response) => {
-        const reservas = Array.isArray(response) ? response : response.data ?? [];
+        const reservas = Array.isArray(response)
+          ? response
+          : (response as { data?: Reserva[] }).data ?? [];
         this.reservasSubject.next(reservas);
       },
       error: (error) => {
@@ -45,8 +45,24 @@ export class ReservasService {
     });
   }
 
-  adicionarReserva(estacao_id: number, data: string, horario_inicio: string, horario_fim: string, observacoes = '', nome_cliente = '', forma_pagamento = 'PIX'): Observable<unknown> {
-    return this.http.post(`${this.apiUrl}/reservas`, { estacao_id, data, horario_inicio, horario_fim, observacoes, nome_cliente, forma_pagamento });
+  adicionarReserva(
+    estacao_id: number,
+    data: string,
+    horario_inicio: string,
+    horario_fim: string,
+    observacoes = '',
+    nome_cliente = '',
+    forma_pagamento = 'PIX',
+  ): Observable<unknown> {
+    return this.http.post(`${this.apiUrl}/reservas`, {
+      estacao_id,
+      data,
+      horario_inicio,
+      horario_fim,
+      observacoes,
+      nome_cliente,
+      forma_pagamento,
+    });
   }
 
   cancelarReserva(id: number): Observable<unknown> {
