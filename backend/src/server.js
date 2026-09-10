@@ -1,3 +1,107 @@
+const crypto = require('crypto');
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const cors = require('cors');
+const db = require('./config/database');
+
+const app = express();
+const PORT = Number(process.env.PORT || 3000);
+const HOST = process.env.HOST || '0.0.0.0';
+const api = express.Router();
+
+app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type', 'Authorization'] }));
+app.use(express.json());
+
+function resposta(res, status, message, data = {}, errors = {}) {
+    return res.status(status).json({ success: status < 400, status, message, data, errors });
+}
+
+// ROTA DE REGISTRO
+api.post('/auth/register', async (req, res) => {
+    try {
+        const { nome, nome_artistico, email, senha, confirmar_senha } = req.body;
+        const nomeFinal = nome || nome_artistico;
+        if (!nomeFinal || !email || !senha) return resposta(res, 400, 'Dados incompletos');
+        if (senha !== confirmar_senha) return resposta(res, 400, 'As senhas não conferem');
+        const hash = await bcrypt.hash(senha, 12);
+        await db.execute('INSERT INTO usuarios (nome, email, senha_hash) VALUES (?, ?, ?)', [nomeFinal, email, hash]);
+        return resposta(res, 201, 'Usuário cadastrado');
+    } catch (error) {
+        console.error(error);
+        return resposta(res, 500, 'Erro no registro');
+    }
+});
+
+// ROTA DE LOGIN
+api.post('/auth/login', async (req, res) => {
+    try {
+        const { email, senha } = req.body;
+        const rows = await db.execute('SELECT * FROM usuarios WHERE email = ?', [email]);
+        if (!rows.length || !(await bcrypt.compare(senha, rows[0].senha_hash))) {
+            return resposta(res, 401, 'Credenciais inválidas');
+        }
+        return resposta(res, 200, 'Login realizado', { token: 'mock-token', user: { id: rows[0].id, nome: rows[0].nome, email: rows[0].email } });
+    } catch (error) {
+        console.error(error);
+        return resposta(res, 500, 'Erro no login');
+    }
+});
+
+api.get('/estacoes', async (req, res) => {
+    try {
+        const rows = await db.execute(`SELECT id, nome, tipo AS categoria, descricao, preco, imagem AS imagem_url, recursos, ativo AS ativa FROM estacoes WHERE ativo = true ORDER BY nome`);
+        return resposta(res, 200, 'Estações carregadas', rows.map(row => ({ ...row, preco_por_hora: Number(row.preco) })));
+    } catch (error) {
+        console.error(error);
+        return resposta(res, 500, 'Erro interno');
+    }
+});
+
+api.get('/estacoes/:id', async (req, res) => {
+    try {
+        const rows = await db.execute(
+            `SELECT id, nome, tipo AS categoria, descricao, preco, imagem AS imagem_url, recursos, ativo AS ativa 
+             FROM estacoes WHERE id = ? AND ativo = true`,
+            [req.params.id]
+        );
+        if (!rows.length) return resposta(res, 404, 'Estação não encontrada');
+        return resposta(res, 200, 'Estação carregada', { ...rows[0], preco_por_hora: Number(rows[0].preco) });
+    } catch (error) {
+        console.error(error);
+        return resposta(res, 500, 'Erro interno');
+    }
+});
+
+api.get('/estacoes/:id/horarios', async (req, res) => {
+    try {
+        const rows = await db.execute(
+            `SELECT entrada_hora AS horario_inicio, saida_hora AS horario_fim
+             FROM reservas
+             WHERE estacao_id = ? AND entrada_data = ? AND status = 'CONFIRMADA'`,
+            [req.params.id, req.query.data]
+        );
+        return resposta(res, 200, 'Horários ocupados carregados', rows);
+    } catch (error) {
+        console.error(error);
+        return resposta(res, 500, 'Erro interno');
+    }
+});
+
+api.post('/reservas', async (req, res) => {
+    try {
+        const { estacao_id, data, horario_inicio, horario_fim, observacoes, nome_cliente, forma_pagamento } = req.body;
+        await db.execute(
+            `INSERT INTO reservas (estacao_id, entrada_data, entrada_hora, saida_data, saida_hora, status, observacoes, nome_cliente, forma_pagamento)
+             VALUES (?, ?, ?, ?, ?, 'CONFIRMADA', ?, ?, ?)`,
+            [estacao_id, data, horario_inicio, data, horario_fim, observacoes || '', nome_cliente || '', forma_pagamento || 'PIX']
+        );
+        return resposta(res, 201, 'Reserva criada');
+    } catch (error) {
+        console.error(error);
+        return resposta(res, 500, 'Erro ao criar reserva');
+    }
+});
+
 // ROTA PARA BUSCAR AS RESERVAS SALVAS NO BANCO
 api.get('/reservas', async (req, res) => {
     try {
@@ -24,7 +128,6 @@ api.get('/reservas', async (req, res) => {
              ORDER BY r.entrada_data DESC, r.entrada_hora DESC`
         );
 
-        // Trata o retorno para suportar tanto PostgreSQL (result.rows) quanto arrays diretos
         const rows = Array.isArray(result) ? result : (result?.rows || []);
 
         const formatarData = (d) => {
@@ -40,7 +143,7 @@ api.get('/reservas', async (req, res) => {
 
         const formatarHora = (h) => {
             if (!h) return null;
-            return String(h).slice(0, 5); // HH:MM
+            return String(h).slice(0, 5);
         };
 
         const reservasFormatadas = rows.map(row => ({
@@ -60,3 +163,39 @@ api.get('/reservas', async (req, res) => {
         return resposta(res, 500, 'Erro interno ao listar reservas');
     }
 });
+
+// CANCELAR RESERVA
+api.patch('/reservas/:id/cancelar', async (req, res) => {
+    try {
+        await db.execute(`UPDATE reservas SET status = 'CANCELADA' WHERE id = ?`, [req.params.id]);
+        return resposta(res, 200, 'Reserva cancelada');
+    } catch (error) {
+        console.error(error);
+        return resposta(res, 500, 'Erro ao cancelar reserva');
+    }
+});
+
+// MARCAR RESERVA COMO PAGA
+api.patch('/reservas/:id/pagar', async (req, res) => {
+    try {
+        await db.execute(`UPDATE reservas SET status = 'CONCLUIDA' WHERE id = ?`, [req.params.id]);
+        return resposta(res, 200, 'Pagamento confirmado');
+    } catch (error) {
+        console.error(error);
+        return resposta(res, 500, 'Erro ao confirmar pagamento');
+    }
+});
+
+// APAGAR RESERVA
+api.delete('/reservas/:id', async (req, res) => {
+    try {
+        await db.execute(`DELETE FROM reservas WHERE id = ?`, [req.params.id]);
+        return resposta(res, 200, 'Reserva apagada');
+    } catch (error) {
+        console.error(error);
+        return resposta(res, 500, 'Erro ao apagar reserva');
+    }
+});
+
+app.use(['/api', '/inkstation-api/api'], api);
+app.listen(PORT, HOST, () => console.log(`Servidor rodando em http://${HOST}:${PORT}/api`));
