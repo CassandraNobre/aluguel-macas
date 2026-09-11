@@ -32,15 +32,8 @@ export class Catalogo implements OnInit {
   }
 
   imagem(estacao: Estacao): string {
-    const imagensLocais: Record<number, string> = {
-      1: 'img/Estacao_01_Maca_Hidraulica_Inox.png',
-      2: 'img/Estacao_02_Sessoes_Longas_Suporte_Maquinas.png',
-      3: 'img/Estacao_03_Iluminacao_Precisao_Autoclave.png',
-      4: 'img/Estacao_04_Workstation_Inox_Luz_Direcionada.png',
-    };
-
     if (estacao.imagem_url) return estacao.imagem_url.startsWith('http') ? estacao.imagem_url : `${API_URL.replace('/api', '')}${estacao.imagem_url}`;
-    return imagensLocais[estacao.id] || `${API_URL.replace('/api', '')}/uploads/Estacao_01_Maca_Hidraulica_Inox.png`;
+    return `${API_URL.replace('/api', '')}/uploads/Estacao_01_Maca_Hidraulica_Inox.png`;
   }
 
 

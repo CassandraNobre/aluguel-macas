@@ -22,7 +22,7 @@
       <div class="existing-grid">
         @for (estacao of estacoes; track estacao.id) {
           <article class="existing-card">
-            <div class="existing-image"><img [src]="estacao.imagem_url || 'img/Estacao_01_Maca_Hidraulica_Inox.png'" [alt]="estacao.nome" loading="lazy" decoding="async" /></div>
+            <div class="existing-image"><img [src]="estacao.imagem_url || 'https://aluguel-macas-1.onrender.com/uploads/Estacao_01_Maca_Hidraulica_Inox.png'" [alt]="estacao.nome" loading="lazy" decoding="async" /></div>
             <div><h3>{{ estacao.nome }}</h3><p>{{ estacao.categoria || 'Estação' }}</p><strong>R$ {{ estacao.preco_por_hora ?? estacao.preco ?? 0 }}</strong></div>
             <div class="existing-actions"><button type="button" class="edit-button" (click)="editar(estacao)">Editar</button><button type="button" class="delete-button" (click)="apagar(estacao)">Apagar</button></div>
           </article>

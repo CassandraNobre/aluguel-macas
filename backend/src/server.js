@@ -25,7 +25,7 @@ const upload = multer({
 
 app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type', 'Authorization'] }));
 app.use(express.json());
-app.use('/uploads', express.static(uploadsDir));
+app.use('/uploads', express.static(uploadsDir, { maxAge: '7d', immutable: true }));
 
 function resposta(res, status, message, data = {}, errors = {}) {
   return res.status(status).json({ success: status < 400, status, message, data, errors });
@@ -152,7 +152,7 @@ api.post('/estacoes', upload.single('imagem'), async (req, res) => {
        RETURNING id, nome, tipo AS categoria, descricao, preco, imagem AS imagem_url, recursos, ativo AS ativa`,
       [String(nome).trim(), String(categoria || '').trim(), String(descricao).trim(), preco, imagemUrl, recursosJson]
     );
-    return resposta(res, 201, 'Estação cadastrada', rows[0]);
+    return resposta(res, 201, 'Estação cadastrada', { ...rows[0], imagem_url: imagemPublica(req, rows[0].imagem_url) });
   } catch (error) {
     console.error('Erro ao cadastrar estação:', error);
     return resposta(res, 500, 'Erro ao cadastrar estação');
@@ -208,7 +208,7 @@ api.patch('/estacoes/:id', upload.single('imagem'), async (req, res) => {
     params.push(req.params.id);
     const rows = await db.execute(`UPDATE estacoes SET nome = ?, tipo = ?, descricao = ?, preco = ?, recursos = ?${imagemSql} WHERE id = ? RETURNING id, nome, tipo AS categoria, descricao, preco, imagem AS imagem_url, recursos, ativo AS ativa`, params);
     if (!rows.length) return resposta(res, 404, 'Estação não encontrada');
-    return resposta(res, 200, 'Estação atualizada', rows[0]);
+    return resposta(res, 200, 'Estação atualizada', { ...rows[0], imagem_url: imagemPublica(req, rows[0].imagem_url) });
   } catch (error) {
     console.error('Erro ao atualizar estação:', error);
     return resposta(res, 500, 'Erro ao atualizar estação');
