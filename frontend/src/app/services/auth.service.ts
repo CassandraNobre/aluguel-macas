@@ -8,7 +8,6 @@ export interface Usuario {
   nome: string;
   nome_artistico?: string;
   email: string;
-  telefone?: string;
 }
 
 export interface ApiResponse<T = unknown> {
@@ -67,17 +66,10 @@ export class AuthService {
     });
   }
 
-  solicitarRecuperacao(identificador: string): Observable<ApiResponse<{ email: string; nome: string }>> {
-    return this.http.post<ApiResponse<{ email: string; nome: string }>>(`${this.apiUrl}/auth/esqueci-senha`, {
+  redefinirSenha(identificador: string, nova_senha: string, confirmar_senha: string): Observable<ApiResponse<unknown>> {
+    return this.http.post<ApiResponse<unknown>>(`${this.apiUrl}/auth/redefinir-senha`, {
       identificador,
       email: identificador,
-      telefone: identificador,
-    });
-  }
-
-  redefinirSenha(email: string, nova_senha: string, confirmar_senha: string): Observable<ApiResponse<unknown>> {
-    return this.http.post<ApiResponse<unknown>>(`${this.apiUrl}/auth/redefinir-senha`, {
-      email,
       nova_senha,
       confirmar_senha,
     });

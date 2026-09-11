@@ -11,7 +11,6 @@ import { AuthService } from '../../services/auth.service';
 })
 export class Login implements OnInit {
   modo: 'login' | 'cadastro' | 'recuperar' = 'login';
-  etapaRecuperacao: 'solicitar' | 'redefinir' = 'solicitar';
 
   nome = '';
   email = '';
@@ -48,11 +47,18 @@ export class Login implements OnInit {
     }
 
     if (this.modo === 'recuperar') {
-      if (this.etapaRecuperacao === 'solicitar') {
-        this.verificarConta();
-      } else {
-        this.confirmarNovaSenha();
-      }
+      this.confirmarNovaSenha();
+      return;
+    }
+
+    // Validação na tela de Login
+    if (!this.email.trim()) {
+      this.erro = 'Informe o seu e-mail ou nome para entrar.';
+      return;
+    }
+
+    if (!this.senha) {
+      this.erro = 'Informe a sua senha.';
       return;
     }
 
@@ -62,7 +68,7 @@ export class Login implements OnInit {
         this.salvarPreferenciaLembrar();
         this.sucesso = 'Login realizado com sucesso!';
         this.carregando = false;
-        setTimeout(() => this.irParaDestino(), 1000);
+        setTimeout(() => this.irParaDestino(), 500);
       },
       error: (error) => {
         this.carregando = false;
@@ -71,36 +77,27 @@ export class Login implements OnInit {
     });
   }
 
-  verificarConta(): void {
-    if (!this.email.trim()) {
-      this.erro = 'Informe seu e-mail, nome ou WhatsApp.';
-      return;
-    }
-
-    this.carregando = true;
-    this.authService.solicitarRecuperacao(this.email).subscribe({
-      next: (res) => {
-        this.carregando = false;
-        this.email = res.data.email;
-        this.etapaRecuperacao = 'redefinir';
-        this.sucesso = `Conta localizada (${res.data.nome})! Digite sua nova senha abaixo.`;
-      },
-      error: (err) => {
-        this.carregando = false;
-        this.erro = err.error?.message ?? 'Conta não encontrada no sistema.';
-      },
-    });
-  }
-
   confirmarNovaSenha(): void {
-    if (!this.senha || !this.confirmarSenha) {
-      this.erro = 'Preencha a nova senha e a confirmação.';
+    if (!this.email.trim()) {
+      this.erro = 'Informe o e-mail ou nome cadastrado.';
       return;
     }
+
+    if (!this.senha) {
+      this.erro = 'Informe a nova senha.';
+      return;
+    }
+
+    if (!this.confirmarSenha) {
+      this.erro = 'Confirme a nova senha.';
+      return;
+    }
+
     if (this.senha !== this.confirmarSenha) {
       this.erro = 'As senhas não coincidem.';
       return;
     }
+
     if (this.senha.length < 8) {
       this.erro = 'A nova senha deve ter pelo menos 8 caracteres.';
       return;
@@ -109,14 +106,20 @@ export class Login implements OnInit {
     this.carregando = true;
     this.authService.redefinirSenha(this.email, this.senha, this.confirmarSenha).subscribe({
       next: (res) => {
-        this.carregando = false;
-        this.sucesso = res.message;
-        setTimeout(() => {
-          this.modo = 'login';
-          this.etapaRecuperacao = 'solicitar';
-          this.senha = '';
-          this.confirmarSenha = '';
-        }, 1500);
+        this.sucesso = 'Senha redefinida! Entrando no sistema...';
+
+        // Entra automaticamente no sistema com a nova senha
+        this.authService.entrar(this.email, this.senha).subscribe({
+          next: () => {
+            this.carregando = false;
+            this.irParaDestino();
+          },
+          error: () => {
+            this.carregando = false;
+            this.modo = 'login';
+            this.sucesso = res.message || 'Senha alterada com sucesso! Faça login com sua nova senha.';
+          },
+        });
       },
       error: (err) => {
         this.carregando = false;
@@ -132,9 +135,10 @@ export class Login implements OnInit {
 
   abrirRecuperacao(): void {
     this.modo = 'recuperar';
-    this.etapaRecuperacao = 'solicitar';
     this.erro = '';
     this.sucesso = '';
+    this.senha = '';
+    this.confirmarSenha = '';
   }
 
   private limparFormulario(): void {

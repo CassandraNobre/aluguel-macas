@@ -22,29 +22,23 @@
         </label>
       }
 
-      @if (modo !== 'recuperar' || etapaRecuperacao === 'solicitar') {
-        <label class="input-group">
-          <span>
-            {{ modo === 'login' ? 'E-mail ou Nome' : (modo === 'recuperar' ? 'E-mail, Nome ou WhatsApp' : 'E-mail') }}
-          </span>
-          <input
-            type="text"
-            name="email"
-            [placeholder]="modo === 'login' ? 'seu@email.com ou nome' : (modo === 'recuperar' ? 'seu@email.com, nome ou WhatsApp' : 'seu@email.com')"
-            [(ngModel)]="email"
-            required
-          />
-        </label>
-      }
+      <label class="input-group">
+        <span>{{ modo === 'cadastro' ? 'E-mail' : 'E-mail ou Nome' }}</span>
+        <input
+          type="text"
+          name="email"
+          [placeholder]="modo === 'cadastro' ? 'seu@email.com' : 'seu@email.com ou nome'"
+          [(ngModel)]="email"
+          required
+        />
+      </label>
 
-      @if (modo !== 'recuperar' || etapaRecuperacao === 'redefinir') {
-        <label class="input-group">
-          <span>{{ modo === 'login' ? 'Senha' : 'Nova senha' }}</span>
-          <input type="password" name="senha" placeholder="Sua senha" [(ngModel)]="senha" required />
-        </label>
-      }
+      <label class="input-group">
+        <span>{{ modo === 'login' ? 'Senha' : 'Nova senha' }}</span>
+        <input type="password" name="senha" placeholder="Sua senha" [(ngModel)]="senha" required />
+      </label>
 
-      @if (modo === 'cadastro' || (modo === 'recuperar' && etapaRecuperacao === 'redefinir')) {
+      @if (modo === 'cadastro' || modo === 'recuperar') {
         <label class="input-group">
           <span>Confirme a nova senha</span>
           <input type="password" name="confirmarSenha" placeholder="Repita a nova senha" [(ngModel)]="confirmarSenha" required />
@@ -70,7 +64,7 @@
       }
 
       <button type="submit" class="login-button" [disabled]="carregando">
-        {{ carregando ? 'Processando...' : (modo === 'login' ? 'Entrar' : (modo === 'cadastro' ? 'Criar cadastro' : (etapaRecuperacao === 'solicitar' ? 'Verificar conta' : 'Salvar nova senha'))) }}
+        {{ carregando ? 'Processando...' : (modo === 'login' ? 'Entrar' : (modo === 'cadastro' ? 'Criar cadastro' : 'Redefinir senha')) }}
       </button>
     </form>
 

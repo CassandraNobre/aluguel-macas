@@ -16,20 +16,17 @@ function resposta(res, status, message, data = {}, errors = {}) {
   return res.status(status).json({ success: status < 400, status, message, data, errors });
 }
 
-// REGISTRO DE USUÁRIO
+// REGISTRO
 api.post('/auth/register', async (req, res) => {
   try {
-    const { nome, nome_artistico, email, senha, confirmar_senha, telefone } = req.body;
+    const { nome, nome_artistico, email, senha, confirmar_senha } = req.body;
     const nomeFinal = nome || nome_artistico;
 
     if (!nomeFinal || !email || !senha) return resposta(res, 400, 'Dados incompletos');
     if (senha !== confirmar_senha) return resposta(res, 400, 'As senhas não conferem');
 
     const hash = await bcrypt.hash(senha, 12);
-    await db.execute(
-      'INSERT INTO usuarios (nome, email, senha_hash, telefone) VALUES (?, ?, ?, ?)',
-      [nomeFinal, email, hash, telefone || null]
-    );
+    await db.execute('INSERT INTO usuarios (nome, email, senha_hash) VALUES (?, ?, ?)', [nomeFinal, email, hash]);
     return resposta(res, 201, 'Usuário cadastrado com sucesso');
   } catch (error) {
     if (error.code === '23505') {
@@ -61,7 +58,7 @@ api.post('/auth/login', async (req, res) => {
 
     return resposta(res, 200, 'Login realizado', {
       token: 'mock-token',
-      user: { id: rows[0].id, nome: rows[0].nome, email: rows[0].email, telefone: rows[0].telefone },
+      user: { id: rows[0].id, nome: rows[0].nome, email: rows[0].email },
     });
   } catch (error) {
     console.error('Erro no login:', error);
@@ -69,50 +66,22 @@ api.post('/auth/login', async (req, res) => {
   }
 });
 
-// SOLICITAR RECUPERAÇÃO (Localiza Usuário)
-api.post('/auth/esqueci-senha', async (req, res) => {
-  try {
-    const { identificador, email, telefone } = req.body;
-    const busca = identificador || email || telefone;
-
-    if (!busca) {
-      return resposta(res, 400, 'Informe seu e-mail, nome ou WhatsApp');
-    }
-
-    const rows = await db.execute(
-      'SELECT id, nome, email FROM usuarios WHERE email = ? OR nome = ? OR telefone = ?',
-      [busca, busca, busca]
-    );
-
-    if (!rows.length) {
-      return resposta(res, 404, 'Usuário não encontrado no sistema');
-    }
-
-    return resposta(res, 200, 'Usuário localizado com sucesso', {
-      email: rows[0].email,
-      nome: rows[0].nome,
-    });
-  } catch (error) {
-    console.error('Erro no esqueci-senha:', error);
-    return resposta(res, 500, 'Erro ao processar solicitação');
-  }
-});
-
-// REDEFINIR SENHA DIRETA
+// REDEFINIR SENHA DIRETA (Único Passo)
 api.post('/auth/redefinir-senha', async (req, res) => {
   try {
-    const { email, nova_senha, confirmar_senha } = req.body;
+    const { identificador, email, nova_senha, confirmar_senha } = req.body;
+    const busca = identificador || email;
 
-    if (!email || !nova_senha) return resposta(res, 400, 'Dados incompletos');
+    if (!busca || !nova_senha) return resposta(res, 400, 'Preencha o e-mail/nome e a nova senha');
     if (nova_senha !== confirmar_senha) return resposta(res, 400, 'As senhas não conferem');
     if (nova_senha.length < 8) return resposta(res, 400, 'A senha deve ter no mínimo 8 caracteres');
 
-    const rows = await db.execute('SELECT id FROM usuarios WHERE email = ?', [email]);
+    const rows = await db.execute('SELECT id FROM usuarios WHERE email = ? OR nome = ?', [busca, busca]);
     if (!rows.length) {
-      return resposta(res, 404, 'Usuário não encontrado');
+      return resposta(res, 404, 'Conta não encontrada com esse e-mail ou nome');
     }
 
-    const hash = await bcrypt.hash(nova_senha, 12);
+    const hash = await bcrypt.hash(nova_senha, 10);
     await db.execute('UPDATE usuarios SET senha_hash = ? WHERE id = ?', [hash, rows[0].id]);
 
     return resposta(res, 200, 'Senha alterada com sucesso! Faça login com a nova senha.');
