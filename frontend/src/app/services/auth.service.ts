@@ -68,6 +68,7 @@ export class AuthService {
   }
 
   solicitarRecuperacaoWhatsApp(identificador: string): Observable<ApiResponse<{ pin: string; email: string; whatsappUrl?: string }>> {
+    // Envia identificador, email e telefone para garantir compatibilidade com qualquer versão da API
     return this.http.post<ApiResponse<{ pin: string; email: string; whatsappUrl?: string }>>(`${this.apiUrl}/auth/esqueci-senha`, {
       identificador,
       email: identificador,

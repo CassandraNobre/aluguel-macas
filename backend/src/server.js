@@ -40,7 +40,7 @@ api.post('/auth/register', async (req, res) => {
   }
 });
 
-// LOGIN
+// LOGIN (Aceita e-mail ou nome)
 api.post('/auth/login', async (req, res) => {
   try {
     const { email, login, senha } = req.body;
@@ -69,7 +69,7 @@ api.post('/auth/login', async (req, res) => {
   }
 });
 
-// RECUPERAÇÃO VIA WHATSAPP (Gera PIN de 6 dígitos)
+// RECUPERAÇÃO VIA WHATSAPP (Lê identificador, email ou telefone)
 api.post('/auth/esqueci-senha', async (req, res) => {
   try {
     const { identificador, email, telefone } = req.body;
