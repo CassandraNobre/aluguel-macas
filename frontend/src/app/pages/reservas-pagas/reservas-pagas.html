@@ -23,7 +23,7 @@
           <tr>
             <td>{{ reserva.nome_cliente || '—' }}</td>
             <td>{{ nomeEstacao(reserva) }}</td>
-            <td>{{ reserva.data }}</td>
+            <td>{{ formatarData(reserva.data) }}</td>
             <td>{{ reserva.horario_inicio }} - {{ reserva.horario_fim }}</td>
             <td>{{ valor(reserva) }}</td>
             <td>{{ formaPagamento(reserva) }}</td>

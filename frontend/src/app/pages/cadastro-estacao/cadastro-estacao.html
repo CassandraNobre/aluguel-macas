@@ -1,0 +1,33 @@
+<section class="cadastro-page">
+  <div class="cadastro-card">
+      <header><p class="eyebrow">Administração</p><h1>{{ editandoId ? 'Editar estação' : 'Cadastrar estação' }}</h1><p>Adicione ou atualize uma maca no catálogo.</p></header>
+    <form (ngSubmit)="salvar()">
+      <label><span>Nome</span><input name="nome" [(ngModel)]="nome" placeholder="Ex.: Estação Premium" required /></label>
+      <label><span>Categoria</span><input name="categoria" [(ngModel)]="categoria" placeholder="Ex.: Premium" /></label>
+      <label><span>Descrição</span><textarea name="descricao" [(ngModel)]="descricao" rows="4" required></textarea></label>
+      <label><span>Preço por hora</span><input name="preco" type="number" min="0.01" step="0.01" [(ngModel)]="precoPorHora" placeholder="0,00" required /></label>
+      <label><span>Imagem da estação</span><input name="imagem" type="file" accept="image/jpeg,image/png,image/webp" (change)="escolherImagem($event)" /></label>
+      <label><span>Recursos</span><input name="recursos" [(ngModel)]="recursos" placeholder="Separe por vírgulas" /></label>
+      @if (erro) { <p class="message error" role="alert">{{ erro }}</p> }
+      @if (sucesso) { <p class="message success" role="status">{{ sucesso }}</p> }
+      <div class="form-actions"><a routerLink="/catalogo" class="secondary-button">Voltar</a>@if (editandoId) { <button type="button" class="secondary-button" (click)="cancelarEdicao()">Cancelar edição</button> }<button type="submit" [disabled]="salvando">{{ salvando ? 'Salvando...' : (editandoId ? 'Salvar alterações' : 'Cadastrar estação') }}</button></div>
+    </form>
+  </div>
+
+  <section class="existing-section">
+    <header><p class="eyebrow">Gerenciar catálogo</p><h2>Estações cadastradas</h2></header>
+    @if (carregandoEstacoes) { <p class="empty-message">Carregando estações...</p> }
+    @else if (!estacoes.length) { <p class="empty-message">Nenhuma estação cadastrada.</p> }
+    @else {
+      <div class="existing-grid">
+        @for (estacao of estacoes; track estacao.id) {
+          <article class="existing-card">
+            <div class="existing-image"><img [src]="estacao.imagem_url || 'img/Estacao_01_Maca_Hidraulica_Inox.png'" [alt]="estacao.nome" /></div>
+            <div><h3>{{ estacao.nome }}</h3><p>{{ estacao.categoria || 'Estação' }}</p><strong>R$ {{ estacao.preco_por_hora ?? estacao.preco ?? 0 }}</strong></div>
+            <div class="existing-actions"><button type="button" class="edit-button" (click)="editar(estacao)">Editar</button><button type="button" class="delete-button" (click)="apagar(estacao)">Apagar</button></div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+</section>

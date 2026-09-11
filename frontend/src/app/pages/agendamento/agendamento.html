@@ -25,9 +25,10 @@
           </label>
         </div>
 
-        <label class="field-group">
+        <label class="field-group date-field">
           <span>Data da sessão</span>
-          <input type="date" name="dataSessao" [(ngModel)]="dataSessao" [min]="dataMinima" (ngModelChange)="atualizarHorariosOcupados()" required />
+          <input type="date" name="dataSessao" [(ngModel)]="dataSessao" [min]="dataMinima" (ngModelChange)="atualizarHorariosOcupados()" aria-label="Escolha o dia da sessão" required />
+          <small>Selecione uma data a partir de hoje para consultar os horários disponíveis.</small>
         </label>
 
         <label class="field-group">

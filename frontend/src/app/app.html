@@ -4,23 +4,23 @@
       <div class="brand-mark">I</div>
       <span class="brand-name">InkStation</span>
     </div>
-
-    <nav class="main-nav" aria-label="Navegação principal">
+    @if (authService.estaAutenticado) {
+      <button type="button" class="menu-toggle" [attr.aria-expanded]="menuAberto" (click)="alternarMenu()">☰ Menu</button>
+      @if (menuAberto) {
+        <button type="button" class="menu-backdrop" aria-label="Fechar menu" (click)="fecharMenu()"></button>
+      }
+    }
+    <nav class="main-nav" [class.menu-open]="menuAberto" aria-label="Navegacao principal">
       @if (authService.estaAutenticado) {
-        <a routerLink="/catalogo">Estações</a>
-        <a routerLink="/agendamento">Agendamento</a>
-        <a routerLink="/minhas-reservas">Minhas reservas</a>
-        <a routerLink="/reservas-pagas">Reservas pagas</a>
+        <a routerLink="/catalogo" (click)="fecharMenu()">Estações</a>
+        <a routerLink="/cadastro-estacao" (click)="fecharMenu()">Cadastrar estação</a>
+        <a routerLink="/agendamento" (click)="fecharMenu()">Agendamento</a>
+        <a routerLink="/minhas-reservas" (click)="fecharMenu()">Minhas reservas</a>
+        <a routerLink="/reservas-pagas" (click)="fecharMenu()">Reservas pagas</a>
         <button type="button" class="logout-button" (click)="sair()">Sair</button>
       }
     </nav>
   </header>
-
-  <main class="page-content">
-    <router-outlet></router-outlet>
-  </main>
-
-  @if (authService.estaAutenticado) {
-    <app-chatbot />
-  }
+  <main class="page-content"><router-outlet></router-outlet></main>
+  @if (authService.estaAutenticado) { <app-chatbot /> }
 </div>

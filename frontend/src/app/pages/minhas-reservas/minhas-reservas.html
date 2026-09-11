@@ -26,7 +26,7 @@
           <tr>
             <td>{{ reserva.nome_cliente || '—' }}</td>
             <td>{{ nomeEstacao(reserva) }}</td>
-            <td>{{ reserva.data }}</td>
+            <td>{{ formatarData(reserva.data) }}</td>
             <td>{{ reserva.horario_inicio }} - {{ reserva.horario_fim }}</td>
             <td>{{ valor(reserva) }}</td>
             <td>
@@ -36,7 +36,8 @@
               }
             </td>
             <td><span class="status {{ classeStatus(reserva.status) }}">{{ reserva.status }}</span></td>
-            <td>
+            <td class="actions-cell">
+              <div class="action-buttons">
               @if (podeCancelar(reserva)) {
                 <button type="button" class="cancel-button" (click)="cancelar(reserva)">Cancelar</button>
               }
@@ -46,6 +47,7 @@
               @if (!estaPaga(reserva)) {
                 <button type="button" class="delete-button" (click)="apagar(reserva)">Apagar</button>
               }
+              </div>
             </td>
           </tr>
         } @empty {

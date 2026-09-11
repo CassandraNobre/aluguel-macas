@@ -31,6 +31,13 @@ export class ReservasPagas implements OnInit {
     return reserva.estacao_nome ?? `Estação #${reserva.estacao_id}`;
   }
 
+  formatarData(data: string | Date | null | undefined): string {
+    if (!data) return 'Não informado';
+    const texto = String(data).slice(0, 10);
+    const partes = texto.split('-');
+    return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : texto;
+  }
+
   valor(reserva: Reserva): string {
     const numero = Number(reserva.valor_total);
     return Number.isFinite(numero) && numero > 0

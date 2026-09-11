@@ -11,6 +11,7 @@ import { Chatbot } from './components/chatbot/chatbot';
 })
 export class App {
   protected readonly title = signal('aluguel-macas');
+  menuAberto = false;
 
   constructor(
     protected authService: AuthService,
@@ -18,7 +19,11 @@ export class App {
   ) {}
 
   sair(): void {
+    this.menuAberto = false;
     this.authService.sair();
     this.router.navigate(['/login']);
   }
+
+  alternarMenu(): void { this.menuAberto = !this.menuAberto; }
+  fecharMenu(): void { this.menuAberto = false; }
 }

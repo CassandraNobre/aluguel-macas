@@ -1,6 +1,16 @@
 :host {
   display: block;
   min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Garante que o padding não aumente a largura dos campos no celular */
+:host *,
+:host *::before,
+:host *::after {
+  box-sizing: border-box;
 }
 
 .login-page {
@@ -8,26 +18,33 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
   background: linear-gradient(rgba(18, 18, 18, 0.88), rgba(18, 18, 18, 0.88)),
-            url('/fundo-login.jpg') no-repeat center center / cover;
-  padding: 2rem;
+              url('/fundo-login.jpg') no-repeat center center / cover;
+  padding: clamp(0.85rem, 3vw, 2rem);
 }
 
 .login-card {
-  width: min(100%, 420px);
+  width: 100%;
+  max-width: 420px;
   background: rgba(20, 20, 20, 0.82);
   border: 1px solid rgba(187, 134, 252, 0.35);
-  border-radius: 24px;
-  padding: 2rem;
+  border-radius: 20px;
+  padding: clamp(1.2rem, 4vw, 2rem);
   box-shadow: 0 18px 45px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  overflow: hidden;
 }
 
 .brand-block {
   display: flex;
   align-items: center;
   gap: 0.8rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
+  width: 100%;
+  min-width: 0; /* Permite que o container e os textos internos encolham no mobile */
 }
 
 .brand-mark {
@@ -40,17 +57,22 @@
   color: #121212;
   font-weight: 800;
   font-size: 1.2rem;
+  flex-shrink: 0; /* Impede o ícone do logotipo de amassar */
 }
 
 .brand-name {
   margin: 0;
   color: #f5f5f5;
-  font-size: 1.15rem;
+  font-size: clamp(0.95rem, 3.5vw, 1.15rem); /* Fonte fluída que diminui automaticamente */
   font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis; /* Se a tela for extremamente pequena, adiciona reticências sem vazar */
+  white-space: nowrap;
 }
 
 .login-header {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .eyebrow {
@@ -65,41 +87,49 @@
 .login-header h1 {
   margin: 0;
   color: #f5f5f5;
-  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  font-size: clamp(1.4rem, 4vw, 2rem);
   line-height: 1.2;
 }
 
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
+  gap: 1.2rem; /* Distância entre cada bloco de input */
+  width: 100%;
 }
 
 .input-group {
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.5rem; /* Espaço entre o texto e o campo */
   color: #e5e5e5;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  width: 100%;
+  min-width: 0; /* Permite que o flexbox reduza o tamanho no mobile */
+}
+
+.input-group span {
+  display: block;
+  line-height: 1.3;
+  margin-bottom: 0.1rem;
 }
 
 .input-group input {
   width: 100%;
-  padding: 0.9rem 1rem;
+  max-width: 100%;
+  box-sizing: border-box; /* Impede o campo de vazar no celular */
+  min-height: 46px;
+  padding: 0.75rem 0.9rem;
   background: rgba(31, 31, 31, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
   color: #f5f5f5;
-  font-size: 1rem;
+  font-size: 0.95rem;
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.input-group input:hover {
-  transform: translateY(-1px);
-}
-
-.input-group input::placeholder {
+.input-group input:placeholder {
   color: rgba(255, 255, 255, 0.45);
 }
 
@@ -112,8 +142,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.75rem;
   font-size: 0.85rem;
+  flex-wrap: wrap;
 }
 
 .remember-me {
@@ -121,33 +152,34 @@
   align-items: center;
   gap: 0.5rem;
   color: #d8d8d8;
+  cursor: pointer;
 }
 
 .remember-me input {
+  width: 18px;
+  height: 18px;
   accent-color: #bb86fc;
-}
-
-.recover-link {
-  color: #bb86fc;
-  text-decoration: none;
+  cursor: pointer;
 }
 
 .login-error {
-  margin: -0.35rem 0 0;
+  margin: 0;
   color: #ff9b9b;
   font-size: 0.85rem;
   line-height: 1.4;
+  word-break: break-word;
 }
 
 .login-success {
-  margin: -0.35rem 0 0;
+  margin: 0;
   color: #9cff9b;
   font-size: 0.85rem;
   line-height: 1.4;
-  padding: 0.65rem;
+  padding: 0.65rem 0.85rem;
   background: rgba(156, 255, 155, 0.1);
   border-radius: 8px;
   border-left: 3px solid #9cff9b;
+  word-break: break-word;
 }
 
 .link-button {
@@ -160,101 +192,35 @@
   font-weight: 600;
   cursor: pointer;
   text-decoration: underline;
-  margin-top: 0.5rem;
-  transition: color 0.2s ease;
 }
 
-.link-button:hover,
-.link-button:focus-visible {
+.link-button:hover {
   color: #d9b8ff;
 }
 
 .login-button {
+  width: 100%;
+  min-height: 48px;
   border: none;
   border-radius: 12px;
-  padding: 0.95rem 1rem;
+  padding: 0.75rem 1rem;
   background: linear-gradient(135deg, #bb86fc, #8a63ff);
   color: #121212;
   font-size: 1rem;
   font-weight: 800;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
   box-shadow: 0 10px 22px rgba(138, 99, 255, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .login-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 16px 28px rgba(138, 99, 255, 0.5);
-  filter: brightness(1.05);
+  box-shadow: 0 14px 26px rgba(138, 99, 255, 0.5);
 }
 
 .login-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  transform: none;
-}
-
-.divider {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  margin: 1.25rem 0 1rem;
-  color: rgba(255, 255, 255, 0.45);
-  font-size: 0.8rem;
-}
-
-.divider::before,
-.divider::after {
-  content: '';
-  height: 1px;
-  flex: 1;
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.google-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.65rem;
-  width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 12px;
-  padding: 0.85rem 1rem;
-  background: rgba(255, 255, 255, 0.06);
-  color: #f5f5f5;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
-}
-
-.google-button-container {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 0.6rem;
-}
-
-.google-button-container:not(:empty) + .google-button {
-  display: none;
-}
-
-.google-button:hover,
-.google-button:focus-visible {
-  transform: translateY(-1px);
-  border-color: rgba(255, 255, 255, 0.35);
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.google-icon {
-  display: grid;
-  place-items: center;
-  width: 1.35rem;
-  height: 1.35rem;
-  border-radius: 50%;
-  background: #fff;
-  color: #4285f4;
-  font-size: 0.9rem;
-  font-weight: 900;
 }
 
 .mode-switch {
@@ -274,19 +240,38 @@
   cursor: pointer;
 }
 
-.mode-switch button:hover,
-.mode-switch button:focus-visible {
+.mode-switch button:hover {
   color: #d9b8ff;
   text-decoration: underline;
 }
 
 @media (max-width: 480px) {
   .login-card {
-    padding: 1.5rem 1.1rem;
+    padding: 1.25rem 1rem;
   }
 
   .form-options {
     flex-direction: column;
     align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .login-page {
+    padding: 0.65rem;
+  }
+
+  .login-card {
+    border-radius: 16px;
+    padding: 1rem 0.85rem;
+  }
+
+  .login-form {
+    gap: 1rem;
+  }
+
+  .form-options {
+    font-size: 0.8rem;
   }
 }

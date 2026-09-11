@@ -5,7 +5,7 @@
 .agendamento-page {
   min-height: calc(100vh - 72px);
   background: #121212;
-  padding: 2rem;
+  padding: clamp(1rem, 4vw, 2.5rem);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -16,7 +16,7 @@
   background: rgba(28, 28, 28, 0.96);
   border: 1px solid rgba(187, 134, 252, 0.2);
   border-radius: 24px;
-  padding: 2rem;
+  padding: clamp(1.1rem, 4vw, 2rem);
   box-shadow: 0 20px 42px rgba(0, 0, 0, 0.32);
 }
 
@@ -78,6 +78,8 @@
   padding: 0.9rem 1rem;
   font: inherit;
   outline: none;
+  width: 100%;
+  min-width: 0;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -290,5 +292,56 @@
 
   .time-row {
     grid-template-columns: 1fr;
+  }
+
+  .field-row {
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+
+  .summary-panel {
+    padding: 1.1rem;
+  }
+}
+
+.date-field {
+  padding: 1rem;
+  border: 1px solid rgba(187, 134, 252, 0.28);
+  border-radius: 14px;
+  background: rgba(187, 134, 252, 0.06);
+}
+
+.date-field input {
+  min-height: 50px;
+  color-scheme: dark;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.date-field small {
+  color: #aaa;
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+@media (max-width: 380px) {
+  .agendamento-page {
+    padding: 0.75rem;
+  }
+
+  .booking-card {
+    border-radius: 16px;
+  }
+
+  .summary-item {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .summary-item strong {
+    text-align: left;
+    overflow-wrap: anywhere;
   }
 }

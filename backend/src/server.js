@@ -1,16 +1,31 @@
+require('dotenv').config();
 const crypto = require('crypto');
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const db = require('./config/database');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const api = express.Router();
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+fs.mkdirSync(uploadsDir, { recursive: true });
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: uploadsDir,
+    filename: (_req, file, callback) => callback(null, `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9._-]/g, '-')}`),
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, callback) => callback(null, ['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)),
+});
 
 app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type', 'Authorization'] }));
 app.use(express.json());
+app.use('/uploads', express.static(uploadsDir));
 
 function resposta(res, status, message, data = {}, errors = {}) {
   return res.status(status).json({ success: status < 400, status, message, data, errors });
@@ -25,7 +40,7 @@ api.post('/auth/register', async (req, res) => {
     if (!nomeFinal || !email || !senha) return resposta(res, 400, 'Dados incompletos');
     if (senha !== confirmar_senha) return resposta(res, 400, 'As senhas não conferem');
 
-    const hash = await bcrypt.hash(senha, 12);
+    const hash = await bcrypt.hash(senha, 5);
     await db.execute('INSERT INTO usuarios (nome, email, senha_hash) VALUES (?, ?, ?)', [nomeFinal, email, hash]);
     return resposta(res, 201, 'Usuário cadastrado com sucesso');
   } catch (error) {
@@ -92,6 +107,51 @@ api.post('/auth/redefinir-senha', async (req, res) => {
 });
 
 // ESTAÇÕES E RESERVAS
+api.post('/chatbot', async (req, res) => {
+  return resposta(res, 410, 'O chatbot é executado diretamente no frontend.');
+  const pergunta = String(req.body?.message || '').trim().toLowerCase();
+  if (!pergunta) return resposta(res, 400, 'Digite uma mensagem');
+  try {
+    const history = historicoSeguro(req.body?.history);
+    const message = chatbotConfig.flowiseUrl && chatbotConfig.flowiseChatflowId
+      ? await responderComFlowise(pergunta, history)
+      : await responderComOllama(pergunta, history);
+    return resposta(res, 200, 'Resposta do assistente', { message });
+  } catch (error) {
+    console.error('Erro no chatbot:', error.message);
+    return resposta(res, 503, 'Chatbot indisponível. Inicie o Ollama ou configure o Flowise.');
+  }
+  let mensagem = 'Posso ajudar com estacoes, horarios, reservas e pagamentos. O que voce deseja saber?';
+  if (pergunta.includes('horário') || pergunta.includes('horario')) mensagem = 'Os horarios disponiveis aparecem no agendamento depois que voce escolhe a estacao, a data e a duracao da sessao.';
+  else if (pergunta.includes('reserva') || pergunta.includes('agendar')) mensagem = 'Para reservar, acesse Estacoes, escolha uma estacao, selecione data e horario e confirme o agendamento.';
+  else if (pergunta.includes('pagamento') || pergunta.includes('pix')) mensagem = 'As informacoes de pagamento aparecem apos a confirmacao da reserva. Voce tambem pode consultar Reservas pagas.';
+  else if (pergunta.includes('estação') || pergunta.includes('estacao')) mensagem = 'Voce pode consultar as estacoes disponiveis no catalogo. Cada card mostra recursos e preco por hora.';
+  else if (pergunta.includes('olá') || pergunta.includes('ola') || pergunta.includes('oi')) mensagem = 'Ola! Como posso ajudar com sua reserva hoje?';
+  return resposta(res, 200, 'Resposta do assistente', { message: mensagem });
+});
+
+api.post('/estacoes', upload.single('imagem'), async (req, res) => {
+  try {
+    const { nome, categoria, descricao, preco_por_hora, recursos } = req.body || {};
+    const preco = Number(preco_por_hora);
+    if (!String(nome || '').trim() || !String(descricao || '').trim() || !Number.isFinite(preco) || preco <= 0) {
+      return resposta(res, 400, 'Informe nome, descrição e um preço válido');
+    }
+    const recursosJson = JSON.stringify(String(recursos || '').split(',').map((item) => item.trim()).filter(Boolean));
+    const imagemUrl = req.file ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : '';
+    const rows = await db.execute(
+      `INSERT INTO estacoes (nome, tipo, descricao, preco, imagem, recursos, ativo)
+       VALUES (?, ?, ?, ?, ?, ?, true)
+       RETURNING id, nome, tipo AS categoria, descricao, preco, imagem AS imagem_url, recursos, ativo AS ativa`,
+      [String(nome).trim(), String(categoria || '').trim(), String(descricao).trim(), preco, imagemUrl, recursosJson]
+    );
+    return resposta(res, 201, 'Estação cadastrada', rows[0]);
+  } catch (error) {
+    console.error('Erro ao cadastrar estação:', error);
+    return resposta(res, 500, 'Erro ao cadastrar estação');
+  }
+});
+
 api.get('/estacoes', async (req, res) => {
   try {
     const rows = await db.execute(`SELECT id, nome, tipo AS categoria, descricao, preco, imagem AS imagem_url, recursos, ativo AS ativa FROM estacoes WHERE ativo = true ORDER BY nome`);
@@ -114,6 +174,37 @@ api.get('/estacoes/:id', async (req, res) => {
   } catch (error) {
     console.error(error);
     return resposta(res, 500, 'Erro interno');
+  }
+});
+
+api.delete('/estacoes/:id', async (req, res) => {
+  try {
+    const rows = await db.execute('DELETE FROM estacoes WHERE id = ? RETURNING id', [req.params.id]);
+    if (!rows.length) return resposta(res, 404, 'Estação não encontrada');
+    return resposta(res, 200, 'Estação apagada');
+  } catch (error) {
+    if (error.code === '23503') return resposta(res, 409, 'Não é possível apagar uma estação que possui reservas vinculadas');
+    console.error('Erro ao apagar estação:', error);
+    return resposta(res, 500, 'Erro ao apagar estação');
+  }
+});
+
+api.patch('/estacoes/:id', upload.single('imagem'), async (req, res) => {
+  try {
+    const { nome, categoria, descricao, preco_por_hora, recursos } = req.body || {};
+    const preco = Number(preco_por_hora);
+    if (!String(nome || '').trim() || !String(descricao || '').trim() || !Number.isFinite(preco) || preco <= 0) return resposta(res, 400, 'Dados inválidos');
+    const recursosJson = JSON.stringify(String(recursos || '').split(',').map((item) => item.trim()).filter(Boolean));
+    const imagemSql = req.file ? ', imagem = ?' : '';
+    const params = [String(nome).trim(), String(categoria || '').trim(), String(descricao).trim(), preco, recursosJson];
+    if (req.file) params.push(`${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`);
+    params.push(req.params.id);
+    const rows = await db.execute(`UPDATE estacoes SET nome = ?, tipo = ?, descricao = ?, preco = ?, recursos = ?${imagemSql} WHERE id = ? RETURNING id, nome, tipo AS categoria, descricao, preco, imagem AS imagem_url, recursos, ativo AS ativa`, params);
+    if (!rows.length) return resposta(res, 404, 'Estação não encontrada');
+    return resposta(res, 200, 'Estação atualizada', rows[0]);
+  } catch (error) {
+    console.error('Erro ao atualizar estação:', error);
+    return resposta(res, 500, 'Erro ao atualizar estação');
   }
 });
 

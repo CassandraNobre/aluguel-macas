@@ -33,11 +33,11 @@ Endpoints principais:
 - `GET /api/reservas`
 - `POST /api/reservas`
 - `PATCH /api/reservas/:id/cancelar`
-- `POST /api/chatbot`
 
 As rotas protegidas usam `Authorization: Bearer TOKEN`. Copie `backend/.env.example`
 para `backend/.env` e preencha as variáveis localmente. Nunca versione o arquivo
 `.env` com senhas, tokens ou chaves de provedores de IA.
+
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.21.
 

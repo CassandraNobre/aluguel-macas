@@ -3,7 +3,7 @@
 }
 
 .catalogo-page {
-  padding: 2rem;
+  padding: clamp(1.1rem, 4vw, 2.5rem) clamp(1rem, 4vw, 2.5rem);
   background: #121212;
   min-height: calc(100vh - 72px);
 }
@@ -44,7 +44,7 @@
 .estacoes-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
+  gap: clamp(1rem, 2.5vw, 1.5rem);
 }
 
 .catalogo-message {
@@ -216,5 +216,20 @@
   .catalogo-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+
+@media (max-width: 360px) {
+  .catalogo-page {
+    padding-inline: 0.8rem;
+  }
+
+  .foto-container {
+    height: 170px;
+  }
+
+  .card-body {
+    padding: 1rem;
   }
 }

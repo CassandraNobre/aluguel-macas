@@ -15,15 +15,15 @@
 .topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 1rem;
-  padding: 1rem 2rem;
+  padding: 0.85rem clamp(1rem, 4vw, 2rem);
   background: rgba(18, 18, 18, 0.85);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 40;
 }
 
 .brand-wrap {
@@ -50,19 +50,43 @@
 }
 
 .main-nav {
+  display: none;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.55rem;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 30;
+  width: min(320px, 85vw);
+  height: 100vh;
+  padding: 5.5rem 1.25rem 1.25rem;
+  background: #201d23;
+  border-right: 1px solid rgba(187,134,252,.35);
+  box-shadow: 12px 0 32px rgba(0,0,0,.35);
+}
+
+.main-nav.menu-open {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.8rem;
+}
+
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  border: 0;
+  background: rgba(0, 0, 0, 0.55);
+  cursor: pointer;
 }
 
 .main-nav a {
   text-decoration: none;
   color: #d8d8d8;
   font-weight: 600;
-  padding: 0.55rem 0.9rem;
+  padding: 0.8rem 0.9rem;
   border-radius: 999px;
   transition: all 0.2s ease;
+  text-align: left;
 }
 
 .main-nav a:hover,
@@ -80,6 +104,7 @@
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  text-align: left;
   transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
@@ -91,27 +116,39 @@
 }
 
 .page-content {
-  padding: 1.5rem;
+  padding: 0;
 }
+.menu-toggle { position: relative; z-index: 50; display: block; margin-left: 0; border: 1px solid rgba(255,255,255,.14); border-radius: 10px; padding: .55rem .8rem; background: transparent; color: #f5f5f5; font: inherit; font-weight: 700; cursor: pointer; }
+.menu-toggle:hover, .menu-toggle:focus-visible { border-color: rgba(187,134,252,.5); background: rgba(187,134,252,.12); }
 
 @media (max-width: 680px) {
   .topbar {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 1rem 1.2rem;
+    flex-wrap: wrap;
+    padding: .85rem 1.2rem;
+  }
+
+  .main-nav a,
+  .logout-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .topbar {
+    gap: 0.75rem;
+  }
+
+  .brand-name {
+    font-size: 0.95rem;
   }
 
   .main-nav {
-    width: 100%;
+    gap: 0.5rem;
   }
 
-  .main-nav a {
-    flex: 1 1 45%;
-    text-align: center;
-  }
-
+  .main-nav a,
   .logout-button {
-    flex: 1 1 45%;
+    flex-basis: 100%;
   }
 }
 
