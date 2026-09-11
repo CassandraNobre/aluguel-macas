@@ -16,34 +16,31 @@ function resposta(res, status, message, data = {}, errors = {}) {
   return res.status(status).json({ success: status < 400, status, message, data, errors });
 }
 
-// ROTA DE REGISTRO
+// REGISTRO DE USUÁRIO
 api.post('/auth/register', async (req, res) => {
   try {
-    const { nome, nome_artistico, email, senha, confirmar_senha } = req.body;
+    const { nome, nome_artistico, email, senha, confirmar_senha, telefone } = req.body;
     const nomeFinal = nome || nome_artistico;
 
     if (!nomeFinal || !email || !senha) return resposta(res, 400, 'Dados incompletos');
     if (senha !== confirmar_senha) return resposta(res, 400, 'As senhas não conferem');
 
-    const usuarioExistente = await db.execute(
-      'SELECT id FROM usuarios WHERE email = ? OR nome = ?',
-      [email, nomeFinal]
-    );
-
-    if (usuarioExistente.length > 0) {
-      return resposta(res, 409, 'Este e-mail ou nome já está cadastrado');
-    }
-
     const hash = await bcrypt.hash(senha, 12);
-    await db.execute('INSERT INTO usuarios (nome, email, senha_hash) VALUES (?, ?, ?)', [nomeFinal, email, hash]);
+    await db.execute(
+      'INSERT INTO usuarios (nome, email, senha_hash, telefone) VALUES (?, ?, ?, ?)',
+      [nomeFinal, email, hash, telefone || null]
+    );
     return resposta(res, 201, 'Usuário cadastrado com sucesso');
   } catch (error) {
+    if (error.code === '23505') {
+      return resposta(res, 409, 'Este e-mail ou nome já está cadastrado');
+    }
     console.error('Erro no registro:', error);
     return resposta(res, 500, 'Erro no registro');
   }
 });
 
-// ROTA DE LOGIN (Aceita E-mail ou Nome)
+// LOGIN
 api.post('/auth/login', async (req, res) => {
   try {
     const { email, login, senha } = req.body;
@@ -64,7 +61,7 @@ api.post('/auth/login', async (req, res) => {
 
     return resposta(res, 200, 'Login realizado', {
       token: 'mock-token',
-      user: { id: rows[0].id, nome: rows[0].nome, email: rows[0].email },
+      user: { id: rows[0].id, nome: rows[0].nome, email: rows[0].email, telefone: rows[0].telefone },
     });
   } catch (error) {
     console.error('Erro no login:', error);
@@ -72,48 +69,65 @@ api.post('/auth/login', async (req, res) => {
   }
 });
 
-// SOLICITAR RECUPERAÇÃO DE SENHA
+// RECUPERAÇÃO VIA WHATSAPP (Gera PIN de 6 dígitos)
 api.post('/auth/esqueci-senha', async (req, res) => {
   try {
-    const { email } = req.body;
-    if (!email) return resposta(res, 400, 'Informe o e-mail cadastrado');
+    const { identificador, email, telefone } = req.body;
+    const busca = identificador || email || telefone;
 
-    const rows = await db.execute('SELECT id FROM usuarios WHERE email = ?', [email]);
-    if (!rows.length) {
-      return resposta(res, 404, 'E-mail não encontrado no sistema');
+    if (!busca) {
+      return resposta(res, 400, 'Informe seu número de WhatsApp');
     }
 
-    const token = crypto.randomBytes(16).toString('hex');
-    const expira = new Date(Date.now() + 3600000); // 1 hora de validade
+    const rows = await db.execute(
+      'SELECT id, nome, email, telefone FROM usuarios WHERE telefone = ? OR email = ? OR nome = ?',
+      [busca, busca, busca]
+    );
+
+    if (!rows.length) {
+      return resposta(res, 404, 'Número de WhatsApp não encontrado no sistema');
+    }
+
+    const usuario = rows[0];
+    const pin = Math.floor(100000 + Math.random() * 900000).toString();
+    const expira = new Date(Date.now() + 1800000); // 30 minutos
 
     await db.execute(
       'UPDATE usuarios SET reset_token = ?, reset_token_expira = ? WHERE id = ?',
-      [token, expira, rows[0].id]
+      [pin, expira, usuario.id]
     );
 
-    return resposta(res, 200, 'Token de recuperação gerado com sucesso', { token });
+    const numTelefone = (usuario.telefone || busca || '').replace(/\D/g, '');
+    const mensagem = encodeURIComponent(`Olá ${usuario.nome}! Seu código PIN do InkStation é: ${pin}`);
+    const whatsappUrl = numTelefone ? `https://api.whatsapp.com/send?phone=55${numTelefone}&text=${mensagem}` : null;
+
+    return resposta(res, 200, 'Código gerado com sucesso', {
+      pin,
+      email: usuario.email,
+      whatsappUrl,
+    });
   } catch (error) {
     console.error('Erro no esqueci-senha:', error);
     return resposta(res, 500, 'Erro ao processar solicitação');
   }
 });
 
-// REDEFINIR SENHA
+// REDEFINIR SENHA COM PIN
 api.post('/auth/redefinir-senha', async (req, res) => {
   try {
-    const { email, token, nova_senha, confirmar_senha } = req.body;
+    const { email, pin, nova_senha, confirmar_senha } = req.body;
 
-    if (!email || !token || !nova_senha) return resposta(res, 400, 'Dados incompletos');
+    if (!email || !pin || !nova_senha) return resposta(res, 400, 'Dados incompletos');
     if (nova_senha !== confirmar_senha) return resposta(res, 400, 'As senhas não conferem');
     if (nova_senha.length < 8) return resposta(res, 400, 'A senha deve ter no mínimo 8 caracteres');
 
     const rows = await db.execute(
       'SELECT id FROM usuarios WHERE email = ? AND reset_token = ? AND reset_token_expira > NOW()',
-      [email, token]
+      [email, pin]
     );
 
     if (!rows.length) {
-      return resposta(res, 400, 'Token inválido ou expirado. Solicite novamente.');
+      return resposta(res, 400, 'Código PIN incorreto ou expirado.');
     }
 
     const hash = await bcrypt.hash(nova_senha, 12);

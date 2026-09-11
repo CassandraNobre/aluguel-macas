@@ -7,10 +7,10 @@
 
     <div class="login-header">
       <p class="eyebrow">
-        {{ modo === 'login' ? 'Bem-vindo' : (modo === 'cadastro' ? 'Novo artista' : 'Recuperação') }}
+        {{ modo === 'login' ? 'Bem-vindo' : (modo === 'cadastro' ? 'Novo artista' : 'WhatsApp') }}
       </p>
       <h1>
-        {{ modo === 'login' ? 'Entrar no estúdio' : (modo === 'cadastro' ? 'Criar seu cadastro' : 'Redefinir senha') }}
+        {{ modo === 'login' ? 'Entrar no estúdio' : (modo === 'cadastro' ? 'Criar seu cadastro' : 'Recuperar via WhatsApp') }}
       </h1>
     </div>
 
@@ -24,11 +24,13 @@
 
       @if (modo !== 'recuperar' || etapaRecuperacao === 'solicitar') {
         <label class="input-group">
-          <span>{{ modo === 'login' ? 'E-mail ou Nome' : 'E-mail' }}</span>
+          <span>
+            {{ modo === 'login' ? 'E-mail ou Nome' : (modo === 'recuperar' ? 'Número do WhatsApp' : 'E-mail') }}
+          </span>
           <input
-            [type]="modo === 'login' ? 'text' : 'email'"
+            type="text"
             name="email"
-            [placeholder]="modo === 'login' ? 'seu@email.com ou nome' : 'seu@email.com'"
+            [placeholder]="modo === 'login' ? 'seu@email.com ou nome' : (modo === 'recuperar' ? '(85) 99999-9999' : 'seu@email.com')"
             [(ngModel)]="email"
             required
           />
@@ -37,8 +39,8 @@
 
       @if (modo === 'recuperar' && etapaRecuperacao === 'redefinir') {
         <label class="input-group">
-          <span>Código / Token de recuperação</span>
-          <input type="text" name="tokenRecuperacao" placeholder="Cole o token gerado" [(ngModel)]="tokenRecuperacao" required />
+          <span>Código PIN (6 dígitos)</span>
+          <input type="text" name="pin" placeholder="Ex: 482910" [(ngModel)]="pin" maxlength="6" required />
         </label>
       }
 
@@ -52,7 +54,7 @@
       @if (modo === 'cadastro' || (modo === 'recuperar' && etapaRecuperacao === 'redefinir')) {
         <label class="input-group">
           <span>Confirme a nova senha</span>
-          <input type="password" name="confirmarSenha" placeholder="Repita a senha" [(ngModel)]="confirmarSenha" required />
+          <input type="password" name="confirmarSenha" placeholder="Repita a nova senha" [(ngModel)]="confirmarSenha" required />
         </label>
       }
 
@@ -75,7 +77,7 @@
       }
 
       <button type="submit" class="login-button" [disabled]="carregando">
-        {{ carregando ? 'Processando...' : (modo === 'login' ? 'Entrar' : (modo === 'cadastro' ? 'Criar cadastro' : (etapaRecuperacao === 'solicitar' ? 'Gerar código' : 'Salvar nova senha'))) }}
+        {{ carregando ? 'Processando...' : (modo === 'login' ? 'Entrar' : (modo === 'cadastro' ? 'Criar cadastro' : (etapaRecuperacao === 'solicitar' ? 'Enviar Código por WhatsApp' : 'Salvar nova senha'))) }}
       </button>
     </form>
 

@@ -8,6 +8,7 @@ export interface Usuario {
   nome: string;
   nome_artistico?: string;
   email: string;
+  telefone?: string;
 }
 
 export interface ApiResponse<T = unknown> {
@@ -57,16 +58,6 @@ export class AuthService {
     );
   }
 
-  entrarComGoogle(credential: string): Observable<ApiResponse<LoginData>> {
-    return this.http.post<ApiResponse<LoginData>>(`${this.apiUrl}/auth/google`, { credential }).pipe(
-      tap((response) => {
-        localStorage.setItem(this.tokenKey, response.data.token);
-        localStorage.setItem(this.usuarioKey, JSON.stringify(response.data.user));
-        this.usuarioSubject.next(response.data.user);
-      }),
-    );
-  }
-
   cadastrar(nome_artistico: string, email: string, senha: string, confirmar_senha: string): Observable<ApiResponse<unknown>> {
     return this.http.post<ApiResponse<unknown>>(`${this.apiUrl}/auth/register`, {
       nome_artistico,
@@ -76,14 +67,18 @@ export class AuthService {
     });
   }
 
-  solicitarRecuperacao(email: string): Observable<ApiResponse<{ token: string }>> {
-    return this.http.post<ApiResponse<{ token: string }>>(`${this.apiUrl}/auth/esqueci-senha`, { email });
+  solicitarRecuperacaoWhatsApp(identificador: string): Observable<ApiResponse<{ pin: string; email: string; whatsappUrl?: string }>> {
+    return this.http.post<ApiResponse<{ pin: string; email: string; whatsappUrl?: string }>>(`${this.apiUrl}/auth/esqueci-senha`, {
+      identificador,
+      email: identificador,
+      telefone: identificador,
+    });
   }
 
-  redefinirSenha(email: string, token: string, nova_senha: string, confirmar_senha: string): Observable<ApiResponse<unknown>> {
+  redefinirSenhaPin(email: string, pin: string, nova_senha: string, confirmar_senha: string): Observable<ApiResponse<unknown>> {
     return this.http.post<ApiResponse<unknown>>(`${this.apiUrl}/auth/redefinir-senha`, {
       email,
-      token,
+      pin,
       nova_senha,
       confirmar_senha,
     });

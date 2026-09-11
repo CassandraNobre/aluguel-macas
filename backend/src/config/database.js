@@ -23,7 +23,10 @@ const db = {
       const { rows } = await pool.query(pgSql, params);
       return rows;
     } catch (error) {
-      console.error('Erro na query:', error);
+      // Omite o log no Render se for erro de e-mail/nome duplicado (23505)
+      if (error.code !== '23505') {
+        console.error('Erro na query:', error);
+      }
       throw error;
     }
   },
