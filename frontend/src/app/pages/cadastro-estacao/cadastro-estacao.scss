@@ -28,3 +28,29 @@ button { background: #bb86fc; color: #121212; } button:disabled { opacity: .55; 
 .edit-button { border: 1px solid rgba(187,134,252,.4); background: rgba(187,134,252,.12); color: #d9b8ff; }
 .delete-button { border: 1px solid rgba(239,68,68,.4); background: rgba(239,68,68,.1); color: #ff9b9b; }
 .empty-message { color: #aaa; }
+
+input, textarea { min-width: 0; }
+input[type="file"] { padding: .65rem; font-size: .85rem; }
+.cadastro-card, .existing-section { border-radius: clamp(14px, 3vw, 20px); }
+.existing-card { grid-template-columns: 64px minmax(0, 1fr); min-width: 0; }
+.existing-card h3 { overflow-wrap: anywhere; }
+
+@media (min-width: 601px) {
+  .cadastro-card form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cadastro-card form > label:nth-child(3),
+  .cadastro-card form > label:nth-child(5),
+  .cadastro-card form > label:nth-child(6),
+  .cadastro-card form > .message,
+  .cadastro-card form > .form-actions { grid-column: 1 / -1; }
+}
+
+@media (max-width: 600px) {
+  .existing-grid { grid-template-columns: 1fr; }
+  .form-actions > * { flex: 1 1 100%; text-align: center; }
+}
+
+@media (max-width: 360px) {
+  .cadastro-page { padding: .6rem; }
+  .cadastro-card, .existing-section { padding: .85rem; }
+  .existing-actions { flex-direction: column; }
+}

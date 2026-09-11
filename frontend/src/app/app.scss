@@ -106,6 +106,9 @@
   cursor: pointer;
   text-align: left;
   transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  margin-top: 0.75rem;
+  border-color: rgba(255, 120, 120, 0.4);
+  color: #ffb0b0;
 }
 
 .logout-button:hover,
