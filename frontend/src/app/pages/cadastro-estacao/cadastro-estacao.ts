@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { Estacao, EstacaoService } from '../../services/estacao.service';
+import { API_URL } from '../../services/api.config';
 
 @Component({ selector: 'app-cadastro-estacao', imports: [FormsModule, RouterLink], templateUrl: './cadastro-estacao.html', styleUrl: './cadastro-estacao.scss' })
 export class CadastroEstacao implements OnInit {
@@ -13,6 +14,11 @@ export class CadastroEstacao implements OnInit {
   carregandoEstacoes = this.estacoes.length === 0;
 
   constructor(private estacaoService: EstacaoService, private router: Router) {}
+
+  imagemUrl(estacao: Estacao): string {
+    const nomeArquivo = estacao.imagem_url?.split(/[\\/]/).pop();
+    return nomeArquivo ? `${API_URL.replace('/api', '')}/uploads/${nomeArquivo}` : `${API_URL.replace('/api', '')}/uploads/Estacao_01_Maca_Hidraulica_Inox.png`;
+  }
 
   ngOnInit(): void {
     this.carregarEstacoes();

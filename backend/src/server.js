@@ -33,8 +33,9 @@ function resposta(res, status, message, data = {}, errors = {}) {
 
 function imagemPublica(req, imagem) {
   if (!imagem) return '';
-  if (String(imagem).startsWith('http')) return imagem;
-  const nome = String(imagem).split('/').pop();
+  const valor = String(imagem).trim();
+  const nome = valor.split(/[\\/]/).pop();
+  if (!nome) return '';
   return `${req.protocol}://${req.get('host')}/uploads/${nome}`;
 }
 

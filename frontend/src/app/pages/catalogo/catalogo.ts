@@ -32,7 +32,10 @@ export class Catalogo implements OnInit {
   }
 
   imagem(estacao: Estacao): string {
-    if (estacao.imagem_url) return estacao.imagem_url.startsWith('http') ? estacao.imagem_url : `${API_URL.replace('/api', '')}${estacao.imagem_url}`;
+    if (estacao.imagem_url) {
+      const nomeArquivo = estacao.imagem_url.split(/[\\/]/).pop();
+      if (nomeArquivo) return `${API_URL.replace('/api', '')}/uploads/${nomeArquivo}`;
+    }
     return `${API_URL.replace('/api', '')}/uploads/Estacao_01_Maca_Hidraulica_Inox.png`;
   }
 
