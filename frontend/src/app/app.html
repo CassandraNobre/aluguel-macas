@@ -17,9 +17,11 @@
         <a routerLink="/agendamento" (click)="fecharMenu()">Agendamento</a>
         <a routerLink="/minhas-reservas" (click)="fecharMenu()">Minhas reservas</a>
         <a routerLink="/reservas-pagas" (click)="fecharMenu()">Reservas pagas</a>
-        <button type="button" class="logout-button" (click)="sair()">↪ Sair da conta</button>
       }
     </nav>
+    @if (authService.estaAutenticado) {
+      <button type="button" class="topbar-logout" (click)="sair()">↪ Sair</button>
+    }
   </header>
   <main class="page-content"><router-outlet></router-outlet></main>
   @if (authService.estaAutenticado) { <app-chatbot /> }

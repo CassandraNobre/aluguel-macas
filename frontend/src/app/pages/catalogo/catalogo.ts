@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Estacao, EstacaoService } from '../../services/estacao.service';
+import { API_URL } from '../../services/api.config';
 
 @Component({
   selector: 'app-catalogo',
@@ -38,7 +39,8 @@ export class Catalogo implements OnInit {
       4: 'img/Estacao_04_Workstation_Inox_Luz_Direcionada.png',
     };
 
-    return estacao.imagem_url || imagensLocais[estacao.id] || 'img/Estacao_01_Maca_Hidraulica_Inox.png';
+    if (estacao.imagem_url) return estacao.imagem_url.startsWith('http') ? estacao.imagem_url : `${API_URL.replace('/api', '')}${estacao.imagem_url}`;
+    return imagensLocais[estacao.id] || `${API_URL.replace('/api', '')}/uploads/Estacao_01_Maca_Hidraulica_Inox.png`;
   }
 
 

@@ -35,13 +35,19 @@
 
       <label class="input-group">
         <span>{{ modo === 'login' ? 'Senha' : 'Nova senha' }}</span>
-        <input type="password" name="senha" placeholder="Sua senha" [(ngModel)]="senha" required />
+        <div class="password-control">
+          <input [type]="mostrarSenha ? 'text' : 'password'" name="senha" placeholder="Sua senha" [(ngModel)]="senha" required />
+          <button type="button" class="show-password" (click)="alternarSenha()" [attr.aria-label]="mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'">{{ mostrarSenha ? 'Ocultar' : 'Mostrar' }}</button>
+        </div>
       </label>
 
       @if (modo === 'cadastro' || modo === 'recuperar') {
         <label class="input-group">
           <span>Confirme a nova senha</span>
-          <input type="password" name="confirmarSenha" placeholder="Repita a nova senha" [(ngModel)]="confirmarSenha" required />
+          <div class="password-control">
+            <input [type]="mostrarConfirmacao ? 'text' : 'password'" name="confirmarSenha" placeholder="Repita a nova senha" [(ngModel)]="confirmarSenha" required />
+            <button type="button" class="show-password" (click)="alternarConfirmacao()" [attr.aria-label]="mostrarConfirmacao ? 'Ocultar confirmação' : 'Mostrar confirmação'">{{ mostrarConfirmacao ? 'Ocultar' : 'Mostrar' }}</button>
+          </div>
         </label>
       }
 

@@ -18,7 +18,7 @@ button { background: #bb86fc; color: #121212; } button:disabled { opacity: .55; 
 .existing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1.25rem; }
 .existing-card { display: grid; grid-template-columns: 64px 1fr; gap: .8rem; align-items: center; padding: .8rem; border: 1px solid rgba(255,255,255,.08); border-radius: 12px; background: #1f1f1f; }
 .existing-image { width: 64px; height: 64px; overflow: hidden; border-radius: 8px; }
-.existing-image img { width: 100%; height: 100%; object-fit: cover; }
+.existing-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .existing-card h3 { margin: 0; color: #fff; font-size: .95rem; }
 .existing-card p { margin: .2rem 0; color: #aaa; font-size: .78rem; }
 .existing-card strong { color: #d9b8ff; font-size: .85rem; }
@@ -28,6 +28,9 @@ button { background: #bb86fc; color: #121212; } button:disabled { opacity: .55; 
 .edit-button { border: 1px solid rgba(187,134,252,.4); background: rgba(187,134,252,.12); color: #d9b8ff; }
 .delete-button { border: 1px solid rgba(239,68,68,.4); background: rgba(239,68,68,.1); color: #ff9b9b; }
 .empty-message { color: #aaa; }
+.loading-state { display: flex; align-items: center; gap: .65rem; }
+.spinner { width: 1rem; height: 1rem; flex: 0 0 auto; border: 2px solid rgba(255,255,255,.2); border-top-color: #bb86fc; border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 input, textarea { min-width: 0; }
 input[type="file"] { padding: .65rem; font-size: .85rem; }

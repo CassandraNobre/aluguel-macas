@@ -257,6 +257,11 @@
   }
 }
 
+.password-control { position: relative; display: flex; align-items: center; }
+.password-control input { padding-right: 5.5rem; }
+.show-password { position: absolute; right: .65rem; border: 0; padding: .35rem; background: transparent; color: #bb86fc; font: inherit; font-size: .8rem; font-weight: 700; cursor: pointer; }
+.show-password:hover, .show-password:focus-visible { color: #d9b8ff; text-decoration: underline; }
+
 @media (max-width: 360px) {
   .login-page {
     padding: 0.65rem;

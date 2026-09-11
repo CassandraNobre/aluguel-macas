@@ -20,6 +20,11 @@ export class Login implements OnInit {
   erro = '';
   sucesso = '';
   carregando = false;
+  mostrarSenha = false;
+  mostrarConfirmacao = false;
+
+  alternarSenha(): void { this.mostrarSenha = !this.mostrarSenha; }
+  alternarConfirmacao(): void { this.mostrarConfirmacao = !this.mostrarConfirmacao; }
 
   private readonly CHAVE_LEMBRAR = 'inkstation_remember_login';
 

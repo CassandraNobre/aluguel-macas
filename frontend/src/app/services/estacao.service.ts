@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, shareReplay, tap } from 'rxjs';
 import { API_URL } from './api.config';
 
 export interface Estacao {
@@ -34,6 +34,7 @@ export interface NovaEstacao {
 @Injectable({ providedIn: 'root' })
 export class EstacaoService {
   private readonly apiUrl = API_URL;
+  private estacoes$?: Observable<{ data: Estacao[] }>;
 
   constructor(private http: HttpClient) {}
 
@@ -45,11 +46,12 @@ export class EstacaoService {
     dados.append('preco_por_hora', String(estacao.preco_por_hora));
     dados.append('recursos', estacao.recursos ?? '');
     if (imagem) dados.append('imagem', imagem, imagem.name);
-    return this.http.post<{ data: Estacao }>(`${this.apiUrl}/estacoes`, dados);
+    return this.http.post<{ data: Estacao }>(`${this.apiUrl}/estacoes`, dados).pipe(tap(() => this.limparCache()));
   }
 
   listarEstacoes(): Observable<{ data: Estacao[] }> {
-    return this.http.get<{ data: Estacao[] }>(`${this.apiUrl}/estacoes`);
+    this.estacoes$ ??= this.http.get<{ data: Estacao[] }>(`${this.apiUrl}/estacoes`).pipe(shareReplay({ bufferSize: 1, refCount: false }));
+    return this.estacoes$;
   }
 
   buscarEstacao(id: number): Observable<{ data: Estacao }> {
@@ -57,7 +59,7 @@ export class EstacaoService {
   }
 
   apagarEstacao(id: number): Observable<unknown> {
-    return this.http.delete(`${this.apiUrl}/estacoes/${id}`);
+    return this.http.delete(`${this.apiUrl}/estacoes/${id}`).pipe(tap(() => this.limparCache()));
   }
 
   atualizarEstacao(id: number, estacao: NovaEstacao, imagem?: File): Observable<{ data: Estacao }> {
@@ -66,8 +68,10 @@ export class EstacaoService {
     dados.append('descricao', estacao.descricao); dados.append('preco_por_hora', String(estacao.preco_por_hora));
     dados.append('recursos', estacao.recursos ?? '');
     if (imagem) dados.append('imagem', imagem, imagem.name);
-    return this.http.patch<{ data: Estacao }>(`${this.apiUrl}/estacoes/${id}`, dados);
+    return this.http.patch<{ data: Estacao }>(`${this.apiUrl}/estacoes/${id}`, dados).pipe(tap(() => this.limparCache()));
   }
+
+  private limparCache(): void { this.estacoes$ = undefined; }
 
   buscarHorariosOcupados(estacaoId: number, data: string): Observable<{ data: HorarioOcupado[] }> {
     return this.http.get<{ data: HorarioOcupado[] }>(`${this.apiUrl}/estacoes/${estacaoId}/horarios`, { params: { data } });

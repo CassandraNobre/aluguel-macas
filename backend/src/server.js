@@ -19,7 +19,7 @@ const upload = multer({
     destination: uploadsDir,
     filename: (_req, file, callback) => callback(null, `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9._-]/g, '-')}`),
   }),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (_req, file, callback) => callback(null, ['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)),
 });
 
@@ -29,6 +29,13 @@ app.use('/uploads', express.static(uploadsDir));
 
 function resposta(res, status, message, data = {}, errors = {}) {
   return res.status(status).json({ success: status < 400, status, message, data, errors });
+}
+
+function imagemPublica(req, imagem) {
+  if (!imagem) return '';
+  if (String(imagem).startsWith('http')) return imagem;
+  const nome = String(imagem).split('/').pop();
+  return `${req.protocol}://${req.get('host')}/uploads/${nome}`;
 }
 
 // REGISTRO
@@ -155,7 +162,7 @@ api.post('/estacoes', upload.single('imagem'), async (req, res) => {
 api.get('/estacoes', async (req, res) => {
   try {
     const rows = await db.execute(`SELECT id, nome, tipo AS categoria, descricao, preco, imagem AS imagem_url, recursos, ativo AS ativa FROM estacoes WHERE ativo = true ORDER BY nome`);
-    return resposta(res, 200, 'Estações carregadas', rows.map((row) => ({ ...row, preco_por_hora: Number(row.preco) })));
+    return resposta(res, 200, 'Estações carregadas', rows.map((row) => ({ ...row, imagem_url: imagemPublica(req, row.imagem_url), preco_por_hora: Number(row.preco) })));
   } catch (error) {
     console.error(error);
     return resposta(res, 500, 'Erro interno');
@@ -170,7 +177,7 @@ api.get('/estacoes/:id', async (req, res) => {
       [req.params.id]
     );
     if (!rows.length) return resposta(res, 404, 'Estação não encontrada');
-    return resposta(res, 200, 'Estação carregada', { ...rows[0], preco_por_hora: Number(rows[0].preco) });
+    return resposta(res, 200, 'Estação carregada', { ...rows[0], imagem_url: imagemPublica(req, rows[0].imagem_url), preco_por_hora: Number(rows[0].preco) });
   } catch (error) {
     console.error(error);
     return resposta(res, 500, 'Erro interno');

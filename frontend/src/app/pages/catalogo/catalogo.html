@@ -8,7 +8,7 @@
   </header>
 
   @if (carregando) {
-    <p class="catalogo-message">Carregando estações...</p>
+    <p class="catalogo-message loading-state"><span class="spinner"></span>Carregando estações...</p>
   } @else if (erro) {
     <p class="catalogo-message error-message">{{ erro }}</p>
   } @else if (!estacoes.length) {
