@@ -10,14 +10,15 @@ export interface Usuario {
   email: string;
 }
 
-interface ApiResponse<T> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   status: number;
   message: string;
   data: T;
+  errors?: unknown;
 }
 
-interface LoginData {
+export interface LoginData {
   token: string;
   user: Usuario;
 }
@@ -46,8 +47,8 @@ export class AuthService {
     return Boolean(this.token && this.usuario);
   }
 
-  entrar(email: string, senha: string): Observable<ApiResponse<LoginData>> {
-    return this.http.post<ApiResponse<LoginData>>(`${this.apiUrl}/auth/login`, { email, senha }).pipe(
+  entrar(emailOuNome: string, senha: string): Observable<ApiResponse<LoginData>> {
+    return this.http.post<ApiResponse<LoginData>>(`${this.apiUrl}/auth/login`, { email: emailOuNome, senha }).pipe(
       tap((response) => {
         localStorage.setItem(this.tokenKey, response.data.token);
         localStorage.setItem(this.usuarioKey, JSON.stringify(response.data.user));
@@ -75,6 +76,19 @@ export class AuthService {
     });
   }
 
+  solicitarRecuperacao(email: string): Observable<ApiResponse<{ token: string }>> {
+    return this.http.post<ApiResponse<{ token: string }>>(`${this.apiUrl}/auth/esqueci-senha`, { email });
+  }
+
+  redefinirSenha(email: string, token: string, nova_senha: string, confirmar_senha: string): Observable<ApiResponse<unknown>> {
+    return this.http.post<ApiResponse<unknown>>(`${this.apiUrl}/auth/redefinir-senha`, {
+      email,
+      token,
+      nova_senha,
+      confirmar_senha,
+    });
+  }
+
   sair(): void {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.usuarioKey);
@@ -84,7 +98,7 @@ export class AuthService {
   private usuarioSalvo(): Usuario | null {
     try {
       const usuario = localStorage.getItem(this.usuarioKey);
-      return usuario ? JSON.parse(usuario) as Usuario : null;
+      return usuario ? (JSON.parse(usuario) as Usuario) : null;
     } catch {
       return null;
     }

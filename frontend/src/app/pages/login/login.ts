@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -9,16 +9,21 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })
-export class Login {
-  modo: 'login' | 'cadastro' = 'login';
+export class Login implements OnInit {
+  modo: 'login' | 'cadastro' | 'recuperar' = 'login';
+  etapaRecuperacao: 'solicitar' | 'redefinir' = 'solicitar';
+
   nome = '';
-  email = 'artista@example.com';
-  senha = 'senha123456';
+  email = '';
+  senha = '';
   confirmarSenha = '';
-  lembrar = true;
+  tokenRecuperacao = '';
+  lembrar = false;
   erro = '';
   sucesso = '';
   carregando = false;
+
+  private readonly CHAVE_LEMBRAR = 'inkstation_remember_login';
 
   constructor(
     private authService: AuthService,
@@ -26,74 +31,140 @@ export class Login {
     private router: Router,
   ) {}
 
+  ngOnInit(): void {
+    const usuarioSalvo = localStorage.getItem(this.CHAVE_LEMBRAR);
+    if (usuarioSalvo) {
+      this.email = usuarioSalvo;
+      this.lembrar = true;
+    }
+  }
+
   entrar(): void {
     this.erro = '';
     this.sucesso = '';
-    this.carregando = true;
 
     if (this.modo === 'cadastro') {
       this.criarCadastro();
       return;
     }
 
+    if (this.modo === 'recuperar') {
+      if (this.etapaRecuperacao === 'solicitar') {
+        this.solicitarToken();
+      } else {
+        this.confirmarNovaSenha();
+      }
+      return;
+    }
+
+    this.carregando = true;
     this.authService.entrar(this.email, this.senha).subscribe({
       next: () => {
+        this.salvarPreferenciaLembrar();
         this.sucesso = 'Login realizado com sucesso!';
         this.carregando = false;
         setTimeout(() => this.irParaDestino(), 1000);
       },
       error: (error) => {
         this.carregando = false;
-        const mensagem = error.error?.message ?? 'E-mail ou senha inválidos.';
-        this.erro = mensagem;
-        console.error('Erro de login:', error);
+        this.erro = error.error?.message ?? 'E-mail/Nome ou senha inválidos.';
+      },
+    });
+  }
+
+  solicitarToken(): void {
+    if (!this.email.trim()) {
+      this.erro = 'Informe o e-mail cadastrado.';
+      return;
+    }
+    this.carregando = true;
+    this.authService.solicitarRecuperacao(this.email).subscribe({
+      next: (res) => {
+        this.carregando = false;
+        this.tokenRecuperacao = res.data?.token ?? '';
+        this.etapaRecuperacao = 'redefinir';
+        this.sucesso = 'Token gerado com sucesso! Digite o token e a nova senha abaixo.';
+      },
+      error: (err) => {
+        this.carregando = false;
+        this.erro = err.error?.message ?? 'Erro ao solicitar token de recuperação.';
+      },
+    });
+  }
+
+  confirmarNovaSenha(): void {
+    if (!this.tokenRecuperacao.trim() || !this.senha || !this.confirmarSenha) {
+      this.erro = 'Preencha o token e as senhas.';
+      return;
+    }
+    this.carregando = true;
+    this.authService.redefinirSenha(this.email, this.tokenRecuperacao, this.senha, this.confirmarSenha).subscribe({
+      next: (res) => {
+        this.carregando = false;
+        this.sucesso = res.message;
+        setTimeout(() => {
+          this.modo = 'login';
+          this.etapaRecuperacao = 'solicitar';
+          this.senha = '';
+          this.confirmarSenha = '';
+          this.tokenRecuperacao = '';
+        }, 1500);
+      },
+      error: (err) => {
+        this.carregando = false;
+        this.erro = err.error?.message ?? 'Erro ao redefinir senha.';
       },
     });
   }
 
   alternarModo(): void {
     this.modo = this.modo === 'login' ? 'cadastro' : 'login';
+    this.limparFormulario();
+  }
+
+  abrirRecuperacao(): void {
+    this.modo = 'recuperar';
+    this.etapaRecuperacao = 'solicitar';
+    this.erro = '';
+    this.sucesso = '';
+  }
+
+  private limparFormulario(): void {
     this.erro = '';
     this.sucesso = '';
     this.nome = '';
+    this.senha = '';
     this.confirmarSenha = '';
-    if (this.modo === 'login') {
-      this.email = 'artista@example.com';
-      this.senha = 'senha123456';
-    } else {
-      this.email = '';
-      this.senha = '';
-    }
+    this.tokenRecuperacao = '';
   }
 
-  resetarSenha(): void {
-    this.modo = 'cadastro';
-    this.erro = '';
-    this.sucesso = 'Para criar uma nova senha, use o modo de cadastro com um novo e-mail ou entre em contato com suporte.';
-    this.nome = '';
-    this.confirmarSenha = '';
-    this.senha = '';
+  private salvarPreferenciaLembrar(): void {
+    if (this.lembrar) {
+      localStorage.setItem(this.CHAVE_LEMBRAR, this.email);
+    } else {
+      localStorage.removeItem(this.CHAVE_LEMBRAR);
+    }
   }
 
   private criarCadastro(): void {
     if (!this.nome.trim() || !this.email.trim() || this.senha.length < 8) {
       this.erro = 'Preencha nome, e-mail e uma senha com pelo menos 8 caracteres.';
-      this.carregando = false;
       return;
     }
-
     if (this.senha !== this.confirmarSenha) {
       this.erro = 'As senhas não coincidem.';
-      this.carregando = false;
       return;
     }
-
+    this.carregando = true;
     this.authService.cadastrar(this.nome, this.email, this.senha, this.confirmarSenha).subscribe({
-      next: (response) => {
-        this.sucesso = 'Cadastro realizado com sucesso! Entrando na conta...';
+      next: () => {
+        this.sucesso = 'Cadastro realizado! Entrando na conta...';
         setTimeout(() => {
           this.authService.entrar(this.email, this.senha).subscribe({
-            next: () => this.irParaDestino(),
+            next: () => {
+              this.salvarPreferenciaLembrar();
+              this.irParaDestino();
+            },
             error: () => {
               this.carregando = false;
               this.erro = 'Cadastro realizado, mas não foi possível iniciar a sessão.';
@@ -103,12 +174,7 @@ export class Login {
       },
       error: (error) => {
         this.carregando = false;
-        if (error.status === 409) {
-          this.erro = 'Este e-mail já possui cadastro. Volte para o login e entre com sua senha.';
-        } else {
-          this.erro = error.error?.message ?? 'Erro ao realizar cadastro. Tente novamente.';
-        }
-        console.error('Erro de cadastro:', error);
+        this.erro = error.error?.message ?? 'Erro ao realizar cadastro.';
       },
     });
   }

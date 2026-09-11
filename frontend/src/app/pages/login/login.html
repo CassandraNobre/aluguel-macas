@@ -6,8 +6,12 @@
     </div>
 
     <div class="login-header">
-      <p class="eyebrow">{{ modo === 'login' ? 'Bem-vindo' : 'Novo artista' }}</p>
-      <h1>{{ modo === 'login' ? 'Entrar no estúdio' : 'Criar seu cadastro' }}</h1>
+      <p class="eyebrow">
+        {{ modo === 'login' ? 'Bem-vindo' : (modo === 'cadastro' ? 'Novo artista' : 'Recuperação') }}
+      </p>
+      <h1>
+        {{ modo === 'login' ? 'Entrar no estúdio' : (modo === 'cadastro' ? 'Criar seu cadastro' : 'Redefinir senha') }}
+      </h1>
     </div>
 
     <form class="login-form" (ngSubmit)="entrar()">
@@ -18,37 +22,52 @@
         </label>
       }
 
-      <label class="input-group">
-        <span>E-mail</span>
-        <input type="email" name="email" placeholder="seu@email.com" [(ngModel)]="email" required />
-      </label>
-
-      <label class="input-group">
-        <span>{{ modo === 'login' ? 'Senha' : 'Crie uma senha' }}</span>
-        <input type="password" name="senha" placeholder="Sua senha" [(ngModel)]="senha" required />
-      </label>
-
-      @if (modo === 'cadastro') {
+      @if (modo !== 'recuperar' || etapaRecuperacao === 'solicitar') {
         <label class="input-group">
-          <span>Confirme sua senha</span>
-          <input type="password" name="confirmarSenha" placeholder="Repita sua senha" [(ngModel)]="confirmarSenha" required />
+          <span>{{ modo === 'login' ? 'E-mail ou Nome' : 'E-mail' }}</span>
+          <input
+            [type]="modo === 'login' ? 'text' : 'email'"
+            name="email"
+            [placeholder]="modo === 'login' ? 'seu@email.com ou nome' : 'seu@email.com'"
+            [(ngModel)]="email"
+            required
+          />
         </label>
       }
 
-      <div class="form-options">
-        <label class="remember-me">
-          <input type="checkbox" name="lembrar" [(ngModel)]="lembrar" />
-          <span>Lembrar de mim</span>
+      @if (modo === 'recuperar' && etapaRecuperacao === 'redefinir') {
+        <label class="input-group">
+          <span>Código / Token de recuperação</span>
+          <input type="text" name="tokenRecuperacao" placeholder="Cole o token gerado" [(ngModel)]="tokenRecuperacao" required />
         </label>
+      }
 
-        <span class="recover-link">{{ modo === 'login' ? 'Acesso demonstrativo' : 'Dados protegidos localmente' }}</span>
-      </div>
+      @if (modo !== 'recuperar' || etapaRecuperacao === 'redefinir') {
+        <label class="input-group">
+          <span>{{ modo === 'login' ? 'Senha' : 'Nova senha' }}</span>
+          <input type="password" name="senha" placeholder="Sua senha" [(ngModel)]="senha" required />
+        </label>
+      }
+
+      @if (modo === 'cadastro' || (modo === 'recuperar' && etapaRecuperacao === 'redefinir')) {
+        <label class="input-group">
+          <span>Confirme a nova senha</span>
+          <input type="password" name="confirmarSenha" placeholder="Repita a senha" [(ngModel)]="confirmarSenha" required />
+        </label>
+      }
+
+      @if (modo === 'login') {
+        <div class="form-options">
+          <label class="remember-me">
+            <input type="checkbox" name="lembrar" [(ngModel)]="lembrar" />
+            <span>Lembrar de mim</span>
+          </label>
+          <button type="button" class="link-button" (click)="abrirRecuperacao()">Esqueci minha senha</button>
+        </div>
+      }
 
       @if (erro) {
         <p class="login-error" role="alert">{{ erro }}</p>
-        @if (modo === 'login') {
-          <button type="button" class="link-button" (click)="resetarSenha()">Criar nova conta com outra senha</button>
-        }
       }
 
       @if (sucesso) {
@@ -56,14 +75,18 @@
       }
 
       <button type="submit" class="login-button" [disabled]="carregando">
-        {{ carregando ? 'Processando...' : (modo === 'login' ? 'Entrar' : 'Criar cadastro') }}
+        {{ carregando ? 'Processando...' : (modo === 'login' ? 'Entrar' : (modo === 'cadastro' ? 'Criar cadastro' : (etapaRecuperacao === 'solicitar' ? 'Gerar código' : 'Salvar nova senha'))) }}
       </button>
     </form>
 
-    @if (modo === 'login') {
-      <p class="mode-switch">Ainda não tem acesso? <button type="button" (click)="alternarModo()">Criar cadastro</button></p>
-    } @else {
-      <p class="mode-switch">Já possui acesso? <button type="button" (click)="alternarModo()">Entrar na conta</button></p>
-    }
+    <p class="mode-switch">
+      @if (modo === 'recuperar') {
+        Lembrou a senha? <button type="button" (click)="modo = 'login'">Voltar ao login</button>
+      } @else if (modo === 'login') {
+        Ainda não tem acesso? <button type="button" (click)="alternarModo()">Criar cadastro</button>
+      } @else {
+        Já possui acesso? <button type="button" (click)="alternarModo()">Entrar na conta</button>
+      }
+    </p>
   </div>
 </section>
