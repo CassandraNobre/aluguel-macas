@@ -40,7 +40,7 @@ api.post('/auth/register', async (req, res) => {
   }
 });
 
-// LOGIN (Aceita e-mail ou nome)
+// LOGIN
 api.post('/auth/login', async (req, res) => {
   try {
     const { email, login, senha } = req.body;
@@ -69,42 +69,28 @@ api.post('/auth/login', async (req, res) => {
   }
 });
 
-// RECUPERAÇÃO VIA WHATSAPP (Lê identificador, email ou telefone)
+// SOLICITAR RECUPERAÇÃO (Localiza Usuário)
 api.post('/auth/esqueci-senha', async (req, res) => {
   try {
     const { identificador, email, telefone } = req.body;
     const busca = identificador || email || telefone;
 
     if (!busca) {
-      return resposta(res, 400, 'Informe seu número de WhatsApp');
+      return resposta(res, 400, 'Informe seu e-mail, nome ou WhatsApp');
     }
 
     const rows = await db.execute(
-      'SELECT id, nome, email, telefone FROM usuarios WHERE telefone = ? OR email = ? OR nome = ?',
+      'SELECT id, nome, email FROM usuarios WHERE email = ? OR nome = ? OR telefone = ?',
       [busca, busca, busca]
     );
 
     if (!rows.length) {
-      return resposta(res, 404, 'Número de WhatsApp não encontrado no sistema');
+      return resposta(res, 404, 'Usuário não encontrado no sistema');
     }
 
-    const usuario = rows[0];
-    const pin = Math.floor(100000 + Math.random() * 900000).toString();
-    const expira = new Date(Date.now() + 1800000); // 30 minutos
-
-    await db.execute(
-      'UPDATE usuarios SET reset_token = ?, reset_token_expira = ? WHERE id = ?',
-      [pin, expira, usuario.id]
-    );
-
-    const numTelefone = (usuario.telefone || busca || '').replace(/\D/g, '');
-    const mensagem = encodeURIComponent(`Olá ${usuario.nome}! Seu código PIN do InkStation é: ${pin}`);
-    const whatsappUrl = numTelefone ? `https://api.whatsapp.com/send?phone=55${numTelefone}&text=${mensagem}` : null;
-
-    return resposta(res, 200, 'Código gerado com sucesso', {
-      pin,
-      email: usuario.email,
-      whatsappUrl,
+    return resposta(res, 200, 'Usuário localizado com sucesso', {
+      email: rows[0].email,
+      nome: rows[0].nome,
     });
   } catch (error) {
     console.error('Erro no esqueci-senha:', error);
@@ -112,29 +98,22 @@ api.post('/auth/esqueci-senha', async (req, res) => {
   }
 });
 
-// REDEFINIR SENHA COM PIN
+// REDEFINIR SENHA DIRETA
 api.post('/auth/redefinir-senha', async (req, res) => {
   try {
-    const { email, pin, nova_senha, confirmar_senha } = req.body;
+    const { email, nova_senha, confirmar_senha } = req.body;
 
-    if (!email || !pin || !nova_senha) return resposta(res, 400, 'Dados incompletos');
+    if (!email || !nova_senha) return resposta(res, 400, 'Dados incompletos');
     if (nova_senha !== confirmar_senha) return resposta(res, 400, 'As senhas não conferem');
     if (nova_senha.length < 8) return resposta(res, 400, 'A senha deve ter no mínimo 8 caracteres');
 
-    const rows = await db.execute(
-      'SELECT id FROM usuarios WHERE email = ? AND reset_token = ? AND reset_token_expira > NOW()',
-      [email, pin]
-    );
-
+    const rows = await db.execute('SELECT id FROM usuarios WHERE email = ?', [email]);
     if (!rows.length) {
-      return resposta(res, 400, 'Código PIN incorreto ou expirado.');
+      return resposta(res, 404, 'Usuário não encontrado');
     }
 
     const hash = await bcrypt.hash(nova_senha, 12);
-    await db.execute(
-      'UPDATE usuarios SET senha_hash = ?, reset_token = NULL, reset_token_expira = NULL WHERE id = ?',
-      [hash, rows[0].id]
-    );
+    await db.execute('UPDATE usuarios SET senha_hash = ? WHERE id = ?', [hash, rows[0].id]);
 
     return resposta(res, 200, 'Senha alterada com sucesso! Faça login com a nova senha.');
   } catch (error) {
@@ -143,7 +122,7 @@ api.post('/auth/redefinir-senha', async (req, res) => {
   }
 });
 
-// ESTAÇÕES
+// ESTAÇÕES E RESERVAS
 api.get('/estacoes', async (req, res) => {
   try {
     const rows = await db.execute(`SELECT id, nome, tipo AS categoria, descricao, preco, imagem AS imagem_url, recursos, ativo AS ativa FROM estacoes WHERE ativo = true ORDER BY nome`);
@@ -184,7 +163,6 @@ api.get('/estacoes/:id/horarios', async (req, res) => {
   }
 });
 
-// RESERVAS
 api.post('/reservas', async (req, res) => {
   try {
     const { estacao_id, data, horario_inicio, horario_fim, observacoes, nome_cliente, forma_pagamento } = req.body;

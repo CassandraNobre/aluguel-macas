@@ -67,19 +67,17 @@ export class AuthService {
     });
   }
 
-  solicitarRecuperacaoWhatsApp(identificador: string): Observable<ApiResponse<{ pin: string; email: string; whatsappUrl?: string }>> {
-    // Envia identificador, email e telefone para garantir compatibilidade com qualquer versão da API
-    return this.http.post<ApiResponse<{ pin: string; email: string; whatsappUrl?: string }>>(`${this.apiUrl}/auth/esqueci-senha`, {
+  solicitarRecuperacao(identificador: string): Observable<ApiResponse<{ email: string; nome: string }>> {
+    return this.http.post<ApiResponse<{ email: string; nome: string }>>(`${this.apiUrl}/auth/esqueci-senha`, {
       identificador,
       email: identificador,
       telefone: identificador,
     });
   }
 
-  redefinirSenhaPin(email: string, pin: string, nova_senha: string, confirmar_senha: string): Observable<ApiResponse<unknown>> {
+  redefinirSenha(email: string, nova_senha: string, confirmar_senha: string): Observable<ApiResponse<unknown>> {
     return this.http.post<ApiResponse<unknown>>(`${this.apiUrl}/auth/redefinir-senha`, {
       email,
-      pin,
       nova_senha,
       confirmar_senha,
     });

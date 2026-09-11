@@ -17,7 +17,6 @@ export class Login implements OnInit {
   email = '';
   senha = '';
   confirmarSenha = '';
-  pin = '';
   lembrar = false;
   erro = '';
   sucesso = '';
@@ -50,9 +49,9 @@ export class Login implements OnInit {
 
     if (this.modo === 'recuperar') {
       if (this.etapaRecuperacao === 'solicitar') {
-        this.solicitarCodigoWhatsApp();
+        this.verificarConta();
       } else {
-        this.confirmarNovaSenhaPin();
+        this.confirmarNovaSenha();
       }
       return;
     }
@@ -72,36 +71,30 @@ export class Login implements OnInit {
     });
   }
 
-  solicitarCodigoWhatsApp(): void {
+  verificarConta(): void {
     if (!this.email.trim()) {
-      this.erro = 'Informe seu número de WhatsApp.';
+      this.erro = 'Informe seu e-mail, nome ou WhatsApp.';
       return;
     }
 
     this.carregando = true;
-    this.authService.solicitarRecuperacaoWhatsApp(this.email).subscribe({
+    this.authService.solicitarRecuperacao(this.email).subscribe({
       next: (res) => {
         this.carregando = false;
         this.email = res.data.email;
-        this.pin = res.data.pin; // Preenche o PIN automaticamente na tela
         this.etapaRecuperacao = 'redefinir';
-
-        if (res.data.whatsappUrl) {
-          window.open(res.data.whatsappUrl, '_blank');
-        }
-
-        this.sucesso = `Código PIN gerado (${res.data.pin})! Digite sua nova senha abaixo.`;
+        this.sucesso = `Conta localizada (${res.data.nome})! Digite sua nova senha abaixo.`;
       },
       error: (err) => {
         this.carregando = false;
-        this.erro = err.error?.message ?? 'Número de WhatsApp não encontrado no sistema.';
+        this.erro = err.error?.message ?? 'Conta não encontrada no sistema.';
       },
     });
   }
 
-  confirmarNovaSenhaPin(): void {
-    if (!this.pin.trim() || !this.senha || !this.confirmarSenha) {
-      this.erro = 'Preencha o código PIN e as senhas.';
+  confirmarNovaSenha(): void {
+    if (!this.senha || !this.confirmarSenha) {
+      this.erro = 'Preencha a nova senha e a confirmação.';
       return;
     }
     if (this.senha !== this.confirmarSenha) {
@@ -114,7 +107,7 @@ export class Login implements OnInit {
     }
 
     this.carregando = true;
-    this.authService.redefinirSenhaPin(this.email, this.pin, this.senha, this.confirmarSenha).subscribe({
+    this.authService.redefinirSenha(this.email, this.senha, this.confirmarSenha).subscribe({
       next: (res) => {
         this.carregando = false;
         this.sucesso = res.message;
@@ -123,12 +116,11 @@ export class Login implements OnInit {
           this.etapaRecuperacao = 'solicitar';
           this.senha = '';
           this.confirmarSenha = '';
-          this.pin = '';
         }, 1500);
       },
       error: (err) => {
         this.carregando = false;
-        this.erro = err.error?.message ?? 'Código PIN inválido ou expirado.';
+        this.erro = err.error?.message ?? 'Erro ao redefinir senha.';
       },
     });
   }
@@ -151,7 +143,6 @@ export class Login implements OnInit {
     this.nome = '';
     this.senha = '';
     this.confirmarSenha = '';
-    this.pin = '';
   }
 
   private salvarPreferenciaLembrar(): void {
