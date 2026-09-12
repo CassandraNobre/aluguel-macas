@@ -24,6 +24,7 @@ export class Chatbot {
   mensagens: Mensagem[] = [
     { autor: 'assistente', texto: 'Olá! Posso ajudar com estações, horários e reservas do InkStation.' },
   ];
+  modoFallback = false;
 
   alternar(): void {
     this.aberto = !this.aberto;
@@ -40,6 +41,11 @@ export class Chatbot {
     this.carregando = true;
 
     try {
+      if (!('gpu' in navigator)) {
+        this.modoFallback = true;
+        this.mensagens.push({ autor: 'assistente', texto: this.responderSemIA(texto) });
+        return;
+      }
       await this.inicializarModelo();
       const resposta = await this.engine!.chat.completions.create({
         messages: [
@@ -70,5 +76,15 @@ export class Chatbot {
         this.progresso = Math.round(report.progress * 100);
       },
     });
+  }
+
+  private responderSemIA(texto: string): string {
+    const pergunta = texto.toLowerCase();
+    if (/olá|ola|oi/.test(pergunta)) return 'Olá! Posso ajudar com estações, horários e reservas.';
+    if (/reserva|agendar|alugar/.test(pergunta)) return 'Para fazer uma reserva, abra Catálogo, escolha uma estação e clique em Agendar.';
+    if (/horário|horario|data|disponibilidade/.test(pergunta)) return 'Os horários disponíveis aparecem depois que você escolhe a estação e a data.';
+    if (/preço|preco|valor|pagamento|pix/.test(pergunta)) return 'Os preços e formas de pagamento aparecem no catálogo e na confirmação da reserva.';
+    if (/estação|estacao|maca|catálogo|catalogo/.test(pergunta)) return 'Acesse Catálogo para consultar estações, imagens, recursos e preços.';
+    return 'Posso ajudar com estações, horários, reservas e pagamentos.';
   }
 }

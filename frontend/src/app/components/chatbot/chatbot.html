@@ -2,7 +2,7 @@
   <section class="chat-panel" aria-label="Chat de atendimento">
     <header class="chat-header">
       <div>
-        <span class="chat-status">IA local no navegador</span>
+      <span class="chat-status">{{ modoFallback ? 'Atendimento gratuito' : 'IA local no navegador' }}</span>
         <h2>Assistente InkStation</h2>
       </div>
       <button type="button" class="close-button" aria-label="Fechar chat" (click)="alternar()">×</button>
