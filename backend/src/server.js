@@ -36,7 +36,8 @@ function imagemPublica(req, imagem) {
   const valor = String(imagem).trim();
   const nome = valor.split(/[\\/]/).pop();
   if (!nome) return '';
-  return `${req.protocol}://${req.get('host')}/uploads/${nome}`;
+  const protocolo = String(req.get('x-forwarded-proto') || req.protocol).split(',')[0].trim();
+  return `${protocolo}://${req.get('host')}/uploads/${nome}`;
 }
 
 // REGISTRO
