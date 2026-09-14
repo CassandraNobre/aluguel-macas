@@ -1,0 +1,56 @@
+erDiagram
+    USUARIOS ||--o{ RESERVAS : realiza
+    ESTACOES ||--o{ RESERVAS : recebe
+    USUARIOS ||--o{ AUTH_TOKENS : possui
+    USUARIOS ||--o{ AUDIT_LOGS : gera
+
+    USUARIOS {
+        int id PK
+        string nome
+        string email UK
+        string senha_hash
+        string telefone
+        string tipo_usuario
+        boolean ativo
+        datetime criado_em
+    }
+
+    ESTACOES {
+        int id PK
+        string nome
+        string tipo
+        text descricao
+        decimal preco
+        string imagem
+        json recursos
+        boolean ativo
+        datetime criado_em
+    }
+
+    RESERVAS {
+        int id PK
+        int usuario_id FK
+        int estacao_id FK
+        date entrada_data
+        time entrada_hora
+        date saida_data
+        time saida_hora
+        string status
+        datetime criado_em
+    }
+
+    AUTH_TOKENS {
+        int id PK
+        int usuario_id FK
+        string token_hash UK
+        datetime expires_at
+    }
+
+    AUDIT_LOGS {
+        int id PK
+        int usuario_id FK
+        string acao
+        string tabela
+        int registro_id
+        datetime created_at
+    }
