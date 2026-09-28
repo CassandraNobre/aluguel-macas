@@ -7,6 +7,7 @@ export interface Estacao {
   id: number;
   nome: string;
   categoria?: string;
+  tipo?: string;
   descricao: string;
   status?: string;
   ativo?: boolean;

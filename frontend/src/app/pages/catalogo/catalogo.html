@@ -4,7 +4,13 @@
       <p class="eyebrow">Disponível agora</p>
       <h1>Estações de trabalho</h1>
     </div>
-    <button class="filter-button" type="button">Filtrar</button>
+    <div class="filtros" role="search" aria-label="Pesquisar estações">
+      <input [(ngModel)]="termo" (ngModelChange)="iniciarPesquisa()" type="search" placeholder="Pesquisar estação..." aria-label="Pesquisar estação" />
+      <select [(ngModel)]="categoriaSelecionada" (change)="alterarCategoria($event)" aria-label="Filtrar por categoria">
+        <option value="">Todas as categorias</option>
+        @for (categoria of categorias; track categoria) { <option [value]="categoria">{{ categoria }}</option> }
+      </select>
+    </div>
   </header>
 
   @if (carregando) {
@@ -14,8 +20,13 @@
   } @else if (!estacoes.length) {
     <p class="catalogo-message">Nenhuma estação disponível no momento.</p>
   } @else {
+  @if (pesquisando) {
+    <p class="catalogo-message loading-state"><span class="spinner"></span>Pesquisando estações...</p>
+  } @else if (!estacoesFiltradas.length) {
+    <p class="catalogo-message">Nenhuma estação corresponde aos filtros.</p>
+  } @else {
   <div class="estacoes-grid">
-    @for (estacao of estacoes; track estacao.id) {
+    @for (estacao of estacoesFiltradas; track estacao.id) {
       <article class="estacao-card">
         <div class="foto-container">
           <img [src]="imagem(estacao)" [alt]="estacao.nome" class="foto-estacao" [attr.loading]="$index === 0 ? 'eager' : 'lazy'" decoding="async" />
@@ -44,5 +55,6 @@
       </article>
     }
   </div>
+  }
   }
 </section>

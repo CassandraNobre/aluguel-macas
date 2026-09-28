@@ -104,9 +104,19 @@ npm test -- --watch=false
 
 Não versione arquivos `.env`, senhas, tokens ou chaves de provedores externos. Use apenas valores de teste no arquivo `CREDENCIAIS_TESTE.md`.
 
+## Checklist da Sprint 02
+
+- Integração Angular, API Express e PostgreSQL implementada.
+- Cinco tabelas relacionadas: `usuarios`, `estacoes`, `reservas`, `auth_tokens` e `audit_logs`.
+- CRUD de estações e reservas disponível na API.
+- Validação de formulários, conflitos de agenda e tratamento de erros implementados.
+- Schema PostgreSQL: [backend/database/schema-postgresql.sql](backend/database/schema-postgresql.sql).
+- Os commits individuais e as tarefas do Trello devem ser registrados pelo grupo antes da entrega.
+
 ## Documentos complementares
 
 - [Documento de entrega](docs/entrega.md)
+- [Roteiro de demonstração e evidências](docs/ROTEIRO_ENTREGA_02.md)
 - [Diagrama entidade-relacionamento](docs/DER.md)
 - [DER em Mermaid](docs/DER.mmd)
 - [Documentação do back-end](backend/README.md)

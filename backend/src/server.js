@@ -23,6 +23,8 @@ const upload = multer({
   fileFilter: (_req, file, callback) => callback(null, ['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)),
 });
 
+app.get('/health', (_req, res) => res.json({ success: true, status: 'ok', service: 'inkstation-api' }));
+
 app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type', 'Authorization'] }));
 app.use(express.json());
 app.use('/uploads', express.static(uploadsDir, { maxAge: '7d', immutable: true }));
@@ -163,7 +165,7 @@ api.post('/estacoes', upload.single('imagem'), async (req, res) => {
 
 api.get('/estacoes', async (req, res) => {
   try {
-    const rows = await db.execute(`SELECT id, nome, tipo AS categoria, descricao, preco, imagem AS imagem_url, recursos, ativo AS ativa FROM estacoes WHERE ativo = true ORDER BY nome`);
+    const rows = await db.execute(`SELECT id, nome, COALESCE(NULLIF(TRIM(tipo), ''), 'Sem categoria') AS categoria, descricao, preco, imagem AS imagem_url, recursos, ativo AS ativa FROM estacoes WHERE ativo = true ORDER BY nome`);
     return resposta(res, 200, 'Estações carregadas', rows.map((row) => ({ ...row, imagem_url: imagemPublica(req, row.imagem_url), preco_por_hora: Number(row.preco) })));
   } catch (error) {
     console.error(error);
@@ -235,6 +237,15 @@ api.get('/estacoes/:id/horarios', async (req, res) => {
 api.post('/reservas', async (req, res) => {
   try {
     const { estacao_id, data, horario_inicio, horario_fim, observacoes, nome_cliente, forma_pagamento } = req.body;
+    if (!estacao_id || !/^\d{4}-\d{2}-\d{2}$/.test(String(data || '')) || !/^\d{2}:\d{2}$/.test(String(horario_inicio || '')) || !/^\d{2}:\d{2}$/.test(String(horario_fim || ''))) {
+      return resposta(res, 400, 'Informe estação, data e horários válidos');
+    }
+    if (horario_inicio >= horario_fim) return resposta(res, 400, 'O horário final deve ser posterior ao inicial');
+    const conflitos = await db.execute(
+      `SELECT id FROM reservas WHERE estacao_id = ? AND entrada_data = ? AND status IN ('CONFIRMADA', 'PENDENTE') AND entrada_hora < ? AND saida_hora > ?`,
+      [estacao_id, data, horario_fim, horario_inicio]
+    );
+    if (conflitos.length) return resposta(res, 409, 'Este horário já está reservado');
     await db.execute(
       `INSERT INTO reservas (estacao_id, entrada_data, entrada_hora, saida_data, saida_hora, status, observacoes, nome_cliente, forma_pagamento)
        VALUES (?, ?, ?, ?, ?, 'CONFIRMADA', ?, ?, ?)`,
@@ -308,12 +319,23 @@ api.get('/reservas', async (req, res) => {
 
 api.patch('/reservas/:id/cancelar', async (req, res) => {
   try {
-    await db.execute(`UPDATE reservas SET status = 'CANCELADA' WHERE id = ?`, [req.params.id]);
+    const rows = await db.execute(`UPDATE reservas SET status = 'CANCELADA' WHERE id = ? RETURNING id`, [req.params.id]);
+    if (!rows.length) return resposta(res, 404, 'Reserva não encontrada');
     return resposta(res, 200, 'Reserva cancelada');
   } catch (error) {
     console.error(error);
     return resposta(res, 500, 'Erro ao cancelar reserva');
   }
+});
+
+api.patch('/reservas/:id', async (req, res) => {
+  try {
+    const { data, horario_inicio, horario_fim, observacoes, forma_pagamento } = req.body || {};
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(data || '')) || !/^\d{2}:\d{2}$/.test(String(horario_inicio || '')) || !/^\d{2}:\d{2}$/.test(String(horario_fim || '')) || horario_inicio >= horario_fim) return resposta(res, 400, 'Informe data e horários válidos');
+    const rows = await db.execute(`UPDATE reservas SET entrada_data = ?, saida_data = ?, entrada_hora = ?, saida_hora = ?, observacoes = ?, forma_pagamento = ? WHERE id = ? RETURNING id`, [data, data, horario_inicio, horario_fim, observacoes || '', forma_pagamento || 'PIX', req.params.id]);
+    if (!rows.length) return resposta(res, 404, 'Reserva não encontrada');
+    return resposta(res, 200, 'Reserva atualizada');
+  } catch (error) { console.error(error); return resposta(res, 500, 'Erro ao atualizar reserva'); }
 });
 
 api.patch('/reservas/:id/pagar', async (req, res) => {
@@ -328,7 +350,8 @@ api.patch('/reservas/:id/pagar', async (req, res) => {
 
 api.delete('/reservas/:id', async (req, res) => {
   try {
-    await db.execute(`DELETE FROM reservas WHERE id = ?`, [req.params.id]);
+    const rows = await db.execute(`DELETE FROM reservas WHERE id = ? RETURNING id`, [req.params.id]);
+    if (!rows.length) return resposta(res, 404, 'Reserva não encontrada');
     return resposta(res, 200, 'Reserva apagada');
   } catch (error) {
     console.error(error);
