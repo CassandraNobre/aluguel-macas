@@ -125,3 +125,31 @@ Não versione arquivos `.env`, senhas, tokens ou chaves de provedores externos. 
 
 - [Repositório no GitHub](https://github.com/CassandraNobre/aluguel-macas)
 - [Quadro do Trello](https://trello.com/b/L8hmVO5h/aluguel-maca-tatoo)
+
+## Sprint 02 — instruções finais
+
+### Banco PostgreSQL
+
+Crie o banco `inkstation` e execute o schema oficial:
+
+```bash
+psql -U postgres -d inkstation -f backend/database/schema-postgresql.sql
+```
+
+Configure `backend/.env` usando:
+
+```env
+DATABASE_URL=postgresql://postgres:senha@localhost:5432/inkstation
+```
+
+O schema cria cinco tabelas relacionadas: `usuarios`, `estacoes`, `reservas`, `auth_tokens` e `audit_logs`.
+
+### Funcionalidades implementadas
+
+- Cadastro, edição e exclusão de estações com upload de imagem.
+- Criação, consulta, atualização, cancelamento e exclusão de reservas.
+- Pesquisa por texto e filtro por categoria no catálogo, com loading.
+- Validação de formulários, prevenção de horários conflitantes e tratamento de erros.
+- Interface responsiva e persistência no PostgreSQL.
+
+O roteiro de apresentação e a lista de evidências estão em [docs/ROTEIRO_ENTREGA_02.md](docs/ROTEIRO_ENTREGA_02.md).
